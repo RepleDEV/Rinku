@@ -125,19 +125,18 @@ const keyLogger = {
 			sendMessageToMainWindow({
 				type: "keyEvent",
 				keyEvent: e.type,
-				keycode: e.keycode,
+				keycode: e.rawcode,
 				altKey: e.altKey,
 				shiftKey: e.shiftKey,
 				ctrlKey: e.ctrlKey,
 				metaKey: e.metaKey
 			});
-			console.log(e);
 		});
 		iohook.on("keyup", e => {
 			sendMessageToMainWindow({
 				type: "keyEvent",
 				keyEvent: e.type,
-				keycode: e.keycode,
+				keycode: e.rawcode,
 				altKey: e.altKey,
 				shiftKey: e.shiftKey,
 				ctrlKey: e.ctrlKey,
@@ -153,7 +152,6 @@ const keyLogger = {
 			this.initialize();
 			iohook.start();
 		}
-		console.log("Start Keylogger");
 		return;
 	},
 	stop: function() {
