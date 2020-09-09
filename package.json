@@ -1,8 +1,8 @@
 {
   "name": "rinku",
   "productName": "rinku",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "version": "0.1.0",
+  "description": "Rinku (link)",
   "main": "./index.js",
   "scripts": {
     "start": "electron-forge start",
@@ -44,11 +44,28 @@
       ]
     }
   },
+  "iohook": {
+    "targets": [
+      "electron-76",
+      "node-83"
+    ],
+    "platforms": [
+      "win32",
+      "darwin"
+    ],
+    "arches": [
+      "x64",
+      "ia32"
+    ]
+  },
   "dependencies": {
-    "@wildcard-api/server": "^0.3.1",
     "@wildcard-api/client": "^0.3.2",
+    "@wildcard-api/server": "^0.3.1",
     "electron-squirrel-startup": "^1.0.0",
-    "jquery": "^3.5.1"
+    "express": "^4.17.1",
+    "iohook": "^0.6.6",
+    "jquery": "^3.5.1",
+    "robotjs": "^0.6.0"
   },
   "devDependencies": {
     "@electron-forge/cli": "6.0.0-beta.53",
@@ -56,6 +73,6 @@
     "@electron-forge/maker-rpm": "6.0.0-beta.53",
     "@electron-forge/maker-squirrel": "6.0.0-beta.53",
     "@electron-forge/maker-zip": "6.0.0-beta.53",
-    "electron": "10.1.1"
+    "electron": "8.5.1"
   }
 }

@@ -6,7 +6,7 @@ body {
 	padding:0;
 }
 
-main {
+div, main {
 	margin:0 auto;
 	text-align: center;
 }
