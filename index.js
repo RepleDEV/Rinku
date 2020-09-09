@@ -12,9 +12,6 @@ let domIsLoaded = false;
 // Main Window
 let mainWindow;
 
-// Background worker
-let backgroundWorker;
-
 const createWindow = () => {
   	// Create the browser window.
 	mainWindow = new BrowserWindow({
