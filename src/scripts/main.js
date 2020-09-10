@@ -3,12 +3,12 @@ const keycode = require('keycode');
 
 window.$ = window.jQuery = require("jquery");
 
-async function sendIPCMessage(channel, ...args) {
-    return await ipcRenderer.invoke(channel, args[0]);
+async function sendIPCMessage(message) {
+    return await ipcRenderer.invoke("mainWindow", message);
 }
 
 function startKeyLog() {
-    sendIPCMessage("mainWindow", {method: "keylog", options: {value: "start"}});
+    sendIPCMessage("mainWindow", "startKeylog");
     return;
 }
 

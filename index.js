@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const iohook = require('iohook');
+const Server = require('./src/modules/server');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
@@ -95,20 +96,33 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+let server;
+
 ipcMain.handle("mainWindow", async (e, ...args) => {
-	const { method } = args[0];
-	const { options } = args[0];
+	const method = args[0];
+
+	var returnMessage = "";
 
 	switch (method) {
-		case "keylog":
-			keyLogger[options.value]();
+		case "startKeylog":
+			keyLogger.start();
 			break;
-	
+		case "startServer":
+			server = new Server({id: "rinku_ipc_server", networkPort: 3101}, serverCallback);
+			returnMessage = server.start();
+			break;
+		case "stopServer":
+			returnMessage = server.stop();
 		default:
+			returnMessage = "Unknown Method"
 			break;
 	}
-	e.returnValue = "SUCCESS";
+	return returnMessage;
 });
+
+function serverCallback(...args) {
+	console.log(args);
+}
 
 function sendMessageToMainWindow(message) {
 	if (!domIsLoaded)return "DOM HASN'T LOADED YET!";
