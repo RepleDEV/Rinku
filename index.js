@@ -1,14 +1,14 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const iohook = require('iohook');
 const Server = require('./src/modules/server');
+const KeyLogger = require('./src/modules/keylogger');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
     app.quit();
 }
 
-let domIsLoaded = false;
+let domHasLoaded = false;
 
 // Main Window
 let mainWindow;
@@ -42,33 +42,9 @@ const createWindow = () => {
 	// Once dom is ready
 	mainWindow.webContents.on("dom-ready", () => {
 		// Set domIsLoaded to true
-		domIsLoaded = true;
+		domHasLoaded = true;
 	});
 };
-
-const startBackgroundWorker = () => {
-	// Create the window
-	backgroundWorker = new BrowserWindow({
-		alwaysOnTop: true,
-		movable: false,
-		skipTaskbar: false,
-		webPreferences: {
-			nodeIntegration: true,
-			backgroundThrottling: true
-		}
-	});
-
-	// Fixes Node fs issues as seen here https://github.com/electron/electron/issues/22119
-	app.allowRendererProcessReuse = false;
-
-	backgroundWorker.focus();
-
-	backgroundWorker.setAlwaysOnTop(true, "floating");
-
-	backgroundWorker.isAlwaysOnTop(true);
-
-	backgroundWorker.loadFile(path.join(__dirname, "src/worker.html"));
-}
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -96,81 +72,51 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-let server;
+let server, keyLogger;
+
+function sendMessageToMainWindow(message) {
+	if (!domHasLoaded)return "DOM HASN'T LOADED YET!";
+
+	mainWindow.webContents.send("mainWindowMsg", message);
+
+	return "Sent message!";
+}
 
 ipcMain.handle("mainWindow", async (e, ...args) => {
-	const method = args[0];
+	var method = args[0];
 
-	var returnMessage = "";
+	if (typeof method != "string")return new Error("METHOD PARAMETER MUST BE OF STRING TYPE");
+	method = method.toLowerCase();
 
 	switch (method) {
-		case "startKeylog":
-			keyLogger.start();
-			break;
-		case "startServer":
+		case "startkeylog":
+			keyLogger = new KeyLogger(keyLoggerCallback);
+			return keyLogger.start();
+		case "stopkeylog":
+			return keyLogger.stop();
+		case "startserver":
 			server = new Server({id: "rinku_ipc_server", networkPort: 3101}, serverCallback);
-			returnMessage = server.start();
-			break;
-		case "stopServer":
-			returnMessage = server.stop();
+			return server.start();
+		case "stopserver":
+			return server.stop();
+		case "help":
+			return (
+				"Main Process Methods: \n\n" +
+				"startKeyLog => Start keylogger\n" +
+				"stopKeylog => Stop keylogger\n" +
+				"startServer => Start IPC server\n" +
+				"stopServer => Stop IPC server\n" +
+				"help => This help message\n\n" +
+				"All methods are case insensitive. Thank You!"
+			);
 		default:
-			returnMessage = "Unknown Method"
-			break;
+			return "Unknown Method. For all available methods: send the method \"help\"";
 	}
-	return returnMessage;
 });
 
 function serverCallback(...args) {
 	console.log(args);
 }
-
-function sendMessageToMainWindow(message) {
-	if (!domIsLoaded)return "DOM HASN'T LOADED YET!";
-
-	mainWindow.webContents.send("mainWindowMsg", message);
-
-	return 1;
-}
-
-const keyLogger = {
-	initialized: false,
-	initialize: function() {
-		iohook.on("keydown", e => {
-			sendMessageToMainWindow({
-				type: "keyEvent",
-				keyEvent: e.type,
-				keycode: e.rawcode,
-				altKey: e.altKey,
-				shiftKey: e.shiftKey,
-				ctrlKey: e.ctrlKey,
-				metaKey: e.metaKey
-			});
-		});
-		iohook.on("keyup", e => {
-			sendMessageToMainWindow({
-				type: "keyEvent",
-				keyEvent: e.type,
-				keycode: e.rawcode,
-				altKey: e.altKey,
-				shiftKey: e.shiftKey,
-				ctrlKey: e.ctrlKey,
-				metaKey: e.metaKey
-			});
-		});
-		this.initialize = true;
-		return;
-	},
-	start: function() {
-		if (this.initialized)iohook.start();
-		else {
-			this.initialize();
-			iohook.start();
-		}
-		return;
-	},
-	stop: function() {
-		if (this.initialized)iohook.stop();
-		this.initialized = false;
-		return;
-	}
+function keyLoggerCallback(...args) {
+	sendMessageToMainWindow(args);
 }
