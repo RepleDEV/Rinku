@@ -7,4 +7,4 @@
 3. OS: Win32 (Windows), Darwin (MacOS), Linux.
 
 ## Current Released Version:
-PROTOTYPE ¯\_(ツ)_/¯
+PROTOTYPE ¯\\\_(ツ)_/¯
