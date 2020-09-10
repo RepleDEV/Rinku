@@ -1,29 +1,19 @@
 const { ipcRenderer } = require('electron');
-const keycode = require('keycode');
 
 window.$ = window.jQuery = require("jquery");
 
-async function sendIPCMessage(message) {
-    return await ipcRenderer.invoke("mainWindow", message);
+/**
+ * Sends a method using ipcRenderer to the main process;
+ * @param {any} method Method to send
+ */
+async function sendMethod(method) {
+    return await ipcRenderer.invoke("mainWindow", method);
 }
 
-function startKeyLog() {
-    sendIPCMessage("mainWindow", "startKeylog");
-    return;
+async function startKeyLog() {
+    return await sendMethod("startKeylog");
 }
-
-var currentKeysPressed = [];
 
 ipcRenderer.on("mainWindowMsg", (e, data) => {
-    if (data.type == "keyEvent") {
-        const key = keycode(data.keycode);
-        if (data.keyEvent == "keydown") {
-            if (currentKeysPressed.indexOf(key) < 0) {
-                currentKeysPressed.push(key);
-            }
-        } else {
-            currentKeysPressed.splice(currentKeysPressed.indexOf(key), 1);
-        }
-    }
-    $("#currentKeys").html(currentKeysPressed.join(", "));
+    console.log(data);
 });
