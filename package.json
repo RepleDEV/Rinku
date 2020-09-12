@@ -66,8 +66,7 @@
     "iohook": "^0.6.6",
     "jquery": "^3.5.1",
     "keycode": "^2.2.0",
-    "node-ipc": "^9.1.1",
-    "robotjs": "^0.6.0"
+    "node-ipc": "^9.1.1"
   },
   "devDependencies": {
     "@electron-forge/cli": "6.0.0-beta.53",

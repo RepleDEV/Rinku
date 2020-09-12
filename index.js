@@ -42,7 +42,7 @@ const createWindow = () => {
 
 	// Once dom is ready
 	mainWindow.webContents.on("dom-ready", () => {
-		// Set domIsLoaded to true
+		// Set domHasLoaded to true
 		domHasLoaded = true;
 	});
 };

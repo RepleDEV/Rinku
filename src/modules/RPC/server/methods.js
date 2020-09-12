@@ -5,7 +5,7 @@ module.exports = {
             message: `Welcome ${name}!`
         }
     },
-    connect: async function(username, password) {
+    connect: async function(password) {
         if (!username.length || !password.length || typeof username != "string" || typeof password != "string");
             return "Invalid username / password";
         

@@ -1,5 +1,6 @@
 // IPC Server Module
 const ipc = require('node-ipc');
+const portchecker = require('../../portchecker');
 
 /**
  * IPC Server class
@@ -12,27 +13,31 @@ class Server {
      * @param {object} options IPC Server Configuration
      * @param {function} callback Callback function when there's a message
      */
-    constructor(serverId, options, callback) {
+    constructor(serverId, port, callback) {
         if (typeof serverId != "string" || serverId.length == 0) 
             throw new Error("INVALID SERVER ID PARAMETER");
         
         if (typeof options != "object" || typeof callback != "function") 
             throw new Error("INVALID CONSTRUCTOR PARAMETERS");
         
-        ipc.config.id = serverId;
-        for (var option in options) {
-            if (option == "id")continue;
-            ipc.config[option] = options[option];
-        }
+        var isPortAvailable = await portchecker(port);
+        if (isPortAvailable) {
+            ipc.config.id = serverId;
+            ipc.config.networkPort = port;
+            ipc.config.stopRetrying = 0;
 
-        this.options = options;
-        this.callback = callback;
-        this.serverId = serverId;
+            this.options = options;
+            this.callback = callback;
+            this.serverId = serverId;
+        } else {
+            throw new Error("PORT ALREADY IN USE!");
+        }
     }
     /**
      * Start said server
      */
     start() {
+        if (this.#hasStartedServer)return "Server already started";
         ipc.serve(() => {
             ipc.server.on("message", message => {
                 this.callback(
@@ -70,7 +75,7 @@ class Server {
      */
     emit(message) {
         if (!this.#hasStartedServer)
-            return "Server has not started yet.";
+            return "Server has not started yet!";
         
         ipc.server.emit(
             {

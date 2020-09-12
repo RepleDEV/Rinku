@@ -12,8 +12,8 @@ class Client {
     connect(password) {
         wildcard.serverUrl = `http:/localhost:${this.port}`;
         try {
-            const message = await endpoints.connect(password);
-            return message;
+            const clientId = await endpoints.connect(password);
+            return clientId;
         } catch (err) {
             switch (err) {
                 case "No Server Connection":
