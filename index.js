@@ -98,8 +98,8 @@ ipcMain.handle("mainWindow", async (e, ...args) => {
 const ipcMethods = {
 	IPC: {
 		server: {
-			start: function(serverId, options, callback) {
-				server.ipc = new Server(serverId, options, callback);
+			start: function() {
+				server.ipc = new Server(serverCallback);
 				return server.ipc.start();
 			},
 			stop: function() {
@@ -143,16 +143,8 @@ const ipcMethods = {
 	 * Execute method. STRING SENSITIVE!!!
 	 * @param {string} methodstr Method to execute
 	 */
-	exec: async function(methodstr) {
-		const methods = methodstr.split(":");
-
-		var currentMethod = ipcMethods;
-		for (let i = 0; i < methods.length; i++) {
-			const method = methods[i];
-			if (currentMethod[method] === undefined)return "Unknown Method";
-			else if (typeof currentMethod[method] == "function")return await currentMethod[method];
-			currentMethod = currentMethod[method];
-		}
+	exec: async function(method) {
+		//
 	}
 }
 

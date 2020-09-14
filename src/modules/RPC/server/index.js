@@ -11,39 +11,39 @@ const app = express();
 class Server {
     #hasStartedServer = false;
     #server;
-    constructor(port, callback) {
-        if (typeof port != "number")
-            throw new Error("MUST PROVIDE PORT");
+    constructor(callback) {
         if (typeof callback != "function")
-            throw new Error("CALLBACK FUNCTION NOT PROVIDED / ILLEGAL TYPE");
-
+            throw new Error("Callback function not provided.");
+        
         for (var method in methods) {
             endpoints[method] = methods[method];
         }
 
         app.use(wildcard());
 
+        var port = 3012;
+
+        var isPortAvailable = await portchecker(port);
+        while (!isPortAvailable) {
+            port += 10;
+            isPortAvailable = await portchecker(port);
+        }
+
         this.callback = callback;
         this.port = port;
     }
-    start() {
+    start(password) {
         if (this.#hasStartedServer)
             return "Server already started!"
         
-        var portIsAvailable = await portChecker(this.port);
-        
-        if (portIsAvailable) {
-            this.#server = app.listen(this.port);
-            this.#hasStartedServer = true;
+        this.#server = app.listen(this.port);
+        this.#hasStartedServer = true;
 
-            return `Started RPC Server on port: ${this.port}!`;
-        } else {
-            return "PORT ALREADY IN USE!";
-        }
+        return `Started RPC Server on port: ${this.port}!`;
     }
     stop() {
         if (!this.#hasStartedServer)
-            return "Server is not started!"
+            return "Server has not started yet!"
         
         this.#server.stop();
         

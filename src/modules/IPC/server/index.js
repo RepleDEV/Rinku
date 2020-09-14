@@ -13,25 +13,23 @@ class Server {
      * @param {object} options IPC Server Configuration
      * @param {function} callback Callback function when there's a message
      */
-    constructor(serverId, port, callback) {
-        if (typeof serverId != "string" || serverId.length == 0) 
-            throw new Error("INVALID SERVER ID PARAMETER");
+    constructor(callback) {
+        if (typeof callback != "function")
+            throw new Error("Callback function provided.");
         
-        if (typeof options != "object" || typeof callback != "function") 
-            throw new Error("INVALID CONSTRUCTOR PARAMETERS");
-        
-        var isPortAvailable = await portchecker(port);
-        if (isPortAvailable) {
-            ipc.config.id = serverId;
-            ipc.config.networkPort = port;
-            ipc.config.stopRetrying = 0;
+        var port = 3011;
 
-            this.options = options;
-            this.callback = callback;
-            this.serverId = serverId;
-        } else {
-            throw new Error("PORT ALREADY IN USE!");
+        var isPortAvailable = await portchecker(port);
+        while (!isPortAvailable) {
+            port += 10;
+            isPortAvailable = await portchecker(port);
         }
+
+        ipc.config.id = `rinku_ipc_server:${port}`;
+        ipc.config.stopRetrying = 1;
+        ipc.config.networkPort = port;
+
+        this.callback = callback;
     }
     /**
      * Start said server
@@ -60,7 +58,7 @@ class Server {
         this.#hasStartedServer = true;
         ipc.server.start();
 
-        return "Server has started";
+        return `Server has started on port: ${this.port}!`;
     }
     stop() {
         if (!this.#hasStartedServer)
