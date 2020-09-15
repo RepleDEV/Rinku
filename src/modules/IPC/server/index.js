@@ -9,33 +9,34 @@ class Server {
     #hasStartedServer = false;
     /**
      * Server Constructor
-     * @param {string} serverId Name of server to start
-     * @param {object} options IPC Server Configuration
      * @param {function} callback Callback function when there's a message
      */
     constructor(callback) {
         if (typeof callback != "function")
             throw new Error("Callback function provided.");
-        
-        var port = 3011;
 
-        var isPortAvailable = await portchecker(port);
-        while (!isPortAvailable) {
-            port += 10;
-            isPortAvailable = await portchecker(port);
-        }
-
-        ipc.config.id = `rinku_ipc_server:${port}`;
-        ipc.config.stopRetrying = 1;
-        ipc.config.networkPort = port;
+        ipc.config.logger = callback;
 
         this.callback = callback;
     }
     /**
      * Start said server
      */
-    start() {
+    async start() {
         if (this.#hasStartedServer)return "Server already started";
+
+        var port = 3011;
+
+        var isPortAvailable = await portchecker(port);
+        while (isPortAvailable) {
+            port += 10;
+            isPortAvailable = await portchecker(port);
+        }
+
+        ipc.config.id = `rinku_ipc_server`;
+        ipc.config.stopRetrying = 0;
+        ipc.config.networkPort = port;
+
         ipc.serve(() => {
             ipc.server.on("message", message => {
                 this.callback(
@@ -53,12 +54,19 @@ class Server {
                     }
                 );
             });
+            ipc.server.on("connect", () => {
+                this.callback(
+                    {
+                        eventType: "client.connect"
+                    }
+                );
+            });
         });
 
         this.#hasStartedServer = true;
         ipc.server.start();
 
-        return `Server has started on port: ${this.port}!`;
+        return `Server has started on port: ${port}!`;
     }
     stop() {
         if (!this.#hasStartedServer)
@@ -75,13 +83,12 @@ class Server {
         if (!this.#hasStartedServer)
             return "Server has not started yet!";
         
-        ipc.server.emit(
-            {
-                address: ipc.config.networkHost,
-                port: ipc.config.networkPort
-            }, message);
+        ipc.server.emit({
+            address: ipc.config.networkHost,
+            port: ipc.config.networkPort
+        }, message);
 
-        return `Message sent to address: http://${ipc.config.networkHost}:${ipc.config.networkPort}.`;
+        return `Message sent to address: http://localhost:${ipc.config.networkPort}.`;
     }
 }
 

@@ -1,7 +1,12 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const Server = require('./src/modules/IPC/server');
-const Client = require('./src/modules/IPC/client');
+
+const IPCServer = require('./src/modules/IPC/server');
+const IPCClient = require('./src/modules/IPC/client');
+
+const RPCServer = require('./src/modules/RPC/server');
+const RPCClient = require('./src/modules/RPC/client');
+
 const KeyLogger = require('./src/modules/keylogger');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -73,8 +78,12 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-let server = {};
-let client = {};
+let rpcserver;
+let ipcserver;
+
+let rpcclient;
+let ipcclient;
+
 let keylogger;
 
 function sendMessageToMainWindow(message) {
@@ -86,48 +95,51 @@ function sendMessageToMainWindow(message) {
 }
 
 ipcMain.handle("mainWindow", async (e, ...args) => {
-	var method = args[0];
-	var extraArgs = args[1];
-
-	if (typeof method != "string")
-		return new Error("METHOD PARAMETER MUST BE OF STRING TYPE");
-
-	return await ipcMethods.exec(method);
+	return await ipcMethods.exec(args);
 });
 
 const ipcMethods = {
 	IPC: {
 		server: {
-			start: function() {
-				server.ipc = new Server(serverCallback);
-				return server.ipc.start();
+			start: async function() {
+				ipcserver = new IPCServer(sendMessageToMainWindow);
+				return await ipcserver.start();
 			},
 			stop: function() {
-				return server.ipc.stop();
+				return ipcserver.stop();
 			},
 			sendMessage: function(message) {
-				return server.ipc.emit(message);
+				return ipcserver.emit(message);
 			}
 		},
 		client: {
-			start: function() {
-				client.ipc = new Client(serverId, clientId, options, callback);
-				return await client.ipc.connect();
+			connect: async function(clientId) {
+				ipcclient = new IPCClient(clientId, sendMessageToMainWindow);
+				return await ipcclient.connect();
 			},
 			disconnect: function() {
-				return client.ipc.disconnect();
+				return ipcclient.disconnect();
 			},
 			sendMessage: function(message) {
-				return client.ipc.emit(message);
+				return ipcclient.emit(message);
 			}
 		}
 	},
 	RPC: {
 		server: {
-
+			start: async function(password) {
+				rpcserver = new RPCServer();
+				return await rpcserver.start(password);
+			},
+			stop: function() {
+				return rpcserver.stop();
+			}
 		},
 		client: {
-
+			connect: async function(password) {
+				rpcclient = new RPCClient();
+				return await rpcclient.connect(password);
+			}
 		}
 	},
 	keyLogger: {
@@ -139,45 +151,25 @@ const ipcMethods = {
 			return keylogger.stop();
 		}
 	},
-	/**
-	 * Execute method. STRING SENSITIVE!!!
-	 * @param {string} methodstr Method to execute
-	 */
-	exec: async function(method) {
-		//
+	exec: async function(args) {
+		const method = args[0];
+		
+		switch (method) {
+			case "start servers":
+				await this.IPC.server.start();
+				await this.RPC.server.start(args[1]);
+				return "Servers have started";
+			case "connect to server":
+				const client_id = await this.RPC.client.connect(args[1]);
+				if (client_id == "Invalid Password") {
+					return "Invalid Password";
+				} else {
+					return await this.IPC.client.connect(client_id);
+				}
+			case "send message":
+				return this.IPC.client.sendMessage(args[1]);
+			default:
+				return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
+		}
 	}
-}
-
-/**
- * Start IPC server.
- * @param {string} serverId ID of server.
- * @param {number} port Port number. Defaults to 3100.
- * @param {string} host Host name. Defaults to localhost.
- * @param {object} extraOptions Extra options for ipc configuration.
- * @param {function} callback Callback function.
- */
-async function startServer(serverId, port, host, extraOptions, callback) {
-	if (!serverId.length || typeof serverId != "string")return new Error("INVALID SERVER ID PARAMETER");
-
-	port = port || 3100;
-	host = host || "localhost";
-	extraOptions = extraOptions || {};
-
-	// Check port availability
-	const portchecker = require('./src/modules/portchecker');
-	await portchecker(port, host);
-
-
-	server = new Server(serverId, {networkPort: port, ...extraOptions}, callback);
-	return server.start();
-}
-
-function serverCallback(...args) {
-	sendMessageToMainWindow(args);
-}
-function keyLoggerCallback(...args) {
-	sendMessageToMainWindow(args);
-}
-function clientCallback(...args) {
-	sendMessageToMainWindow(args);
 }

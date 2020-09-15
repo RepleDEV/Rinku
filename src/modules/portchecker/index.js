@@ -1,27 +1,26 @@
-const net = require('net');
-const server = net.createServer();
+const http = require('http');
+const server = http.createServer();
 
 /**
- * Checks if a port is already listened to.
- * @param {number} port Port to check
- * @param {string} host Host name. (If not provided, defaults to localhost)
+ * Checks ports in localhost.
+ * @param {number} port Port to check.
+ * @returns {Promise<boolean>} True if port is already in use. False if port is clear.
  */
-module.exports = (port, host) => {
+module.exports = (port) => {
     return new Promise((resolve, reject) => {
-        if (typeof port != "number")return reject("PORT ARGUMENT IS NOT A NUMBER");
+        if (typeof port != "number")
+            return reject("Port number not provided / invalid type.");
 
-        host = host || "localhost";
-
-        server.once('error', err => {
-            if (err.code === 'EADDRINUSE')
-                return resolve(true);
-        });
-         
-        server.once('listening', () => {
+        server.on("listening", () => {
             resolve(false);
             server.close();
         });
-
-        server.listen(port, host);
+        
+        server.on("error", err => {
+            if (err.code === "EADDRINUSE") 
+                resolve(true);
+        });
+        
+        server.listen(port);
     });
 }

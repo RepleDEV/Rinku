@@ -2,28 +2,31 @@
 const ipc = require('node-ipc');
 
 class Client {
+    serverId = "rinku_ipc_server";
+
     #hasConnectedToServer = false;
-    constructor(serverId, clientId, options, callback) {
-        if (typeof serverId != "string" || !serverId.length)
-            throw new Error("INVALID SERVER ID PARAMETER");
+    /**
+     * Node-ipc Client Class Constructor
+     * @param {String} clientId Client Name
+     * @param {String | Function} host Hostname
+     * @param {Function} callback Callback when there's an event
+     */
+    constructor(clientId, host, callback) {
         if (typeof clientId != "string" || !clientId.length) 
             throw new Error("INVALID CLIENT ID PARAMETER");
-        if (typeof options != "object")
-            options = {};
-        if (typeof callback != "function") 
-            throw new Error("CALLBACK PARAMETER IS NOT A FUNCTION")
-        
+        if (typeof host == "function")
+            callback = host;
+        if (typeof host != "function" && typeof callback != "function") 
+            throw new Error("CALLBACK FUNCTION NOT PROVIDED");
 
         ipc.config.id = clientId;
-        for (var option in options) {
-            if (option == "id")continue;
-            ipc.config[option] = options[option];
-        }
+        // If host is a string and also has length, return host, otherwise return localhost
+        ipc.config.networkHost = typeof host == "string" && host.length > 0 ? host : "localhost";
+        ipc.config.stopRetrying = true;
 
-        this.options = options;
-        this.callback = callback;
-        this.serverId = serverId;
         this.clientId = clientId;
+        this.host = host;
+        this.callback = callback;
     }
     connect() {
         return new Promise((resolve, reject) => {
@@ -47,7 +50,15 @@ class Client {
                             message: `Disconnected from: ${this.serverId}`
                         }
                     );
-                })
+                });
+                ipc.of[this.serverId].on("error", err => {
+                    this.callback(
+                        {
+                            eventType: "error",
+                            err: err
+                        }
+                    );
+                });
             });
         });
     }
