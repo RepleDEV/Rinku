@@ -1,46 +1,48 @@
 const wildcard = require("@wildcard-api/client");
 const { endpoints } = wildcard;
 
+const portchecker = require('../../portchecker');
+
 class Client {
     constructor() {
         //
     }
     connect(password, host = "localhost") {
         return new Promise(async (resolve, reject) => {
-            await Client.findServer("ping", 3012).then(async port => {
-                wildcard.serverUrl = `http://${host}:${port}`;
+            await Client.findServer("ping", host, 3012, 3112).then(async port => {
+                wildcard.serverUrl = `http://${host}:${port[0]}`;
 
                 var connect = await endpoints.connect(password);
                 return resolve(connect);
             }).catch(reject); 
         });
     }
-    /**
-     * Scans for wildcard-api servers on ports.
-     * @param {string} method Method to execute on the end point
-     * @param {number} port Port to search
-     * @param {number} portIncrement Number to increase (or decrease) to the port number after an unsuccsessful connection attempt.
-     * @param {number} retries Number of connection retries
-     * 
-     * @returns {Promise<number>} Port number. Rejects promise if no connection was ever made.
-     */
-    static findServer(method, port = 3100, portIncrement = 10, retries = 10) {
-        var cycle = 0;
-
+    static findServer(method, host = "localhost", startingPort = 3100, endPort = 3200) {
         return new Promise(async (resolve, reject) => {
             if (typeof method != "string" || !method.length)
-                return reject("MUST PROVIDE ENDPOINT METHOD");
+                return reject("ILLEGAL METHOD PARAMETER");
+            
+            var foundPorts = [];
+            for(var i = 0;i < endPort - startingPort;i++) {
+                const portUsed = await portchecker(startingPort + i);
+                if (portUsed)
+                    foundPorts.push(startingPort + i);
+            }
 
-            wildcard.serverUrl = `http://localhost:${port}`;
+            if (!foundPorts.length)
+                return reject("No open ports found.")
 
-            await endpoints[method]().then(() => {
-                resolve(port);
-            }).catch(async err => {
-                if (cycle == retries)
-                    return reject("No connection found.");
-                if (err.message == "No Server Connection") 
-                    resolve(await this.findServer(method, port + portIncrement));
+            foundPorts.forEach(async (port, i) => {
+                wildcard.serverUrl = `http://${host}:${port}`;
+
+                try {
+                    await endpoints[method]();
+                } catch (err) {
+                    foundPorts.splice(i, 1);
+                }
             });
+
+            return resolve(foundPorts);
         });
     }
 }
