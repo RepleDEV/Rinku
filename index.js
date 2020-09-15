@@ -136,9 +136,9 @@ const ipcMethods = {
 			}
 		},
 		client: {
-			connect: async function(password) {
+			connect: async function(password, host) {
 				rpcclient = new RPCClient();
-				return await rpcclient.connect(password);
+				return await rpcclient.connect(password, host);
 			}
 		}
 	},
@@ -160,7 +160,7 @@ const ipcMethods = {
 				await this.RPC.server.start(args[1]);
 				return "Servers have started";
 			case "connect to server":
-				const client_id = await this.RPC.client.connect(args[1]);
+				const client_id = await this.RPC.client.connect(args[1], args[2]);
 				if (client_id == "Invalid Password") {
 					return "Invalid Password";
 				} else {

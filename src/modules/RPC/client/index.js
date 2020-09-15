@@ -5,10 +5,10 @@ class Client {
     constructor() {
         
     }
-    connect(password) {
+    connect(password, host = "localhost") {
         return new Promise(async (resolve, reject) => {
             await Client.findServer("ping", 3012).then(async port => {
-                wildcard.serverUrl = `http://localhost:${port}`;
+                wildcard.serverUrl = `http://${host}:${port}`;
                 var connect = await endpoints.connect(password);
                 return resolve(connect);
             }).catch(reject); 
