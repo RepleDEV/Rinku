@@ -153,21 +153,22 @@ const ipcMethods = {
 	},
 	exec: async function(args) {
 		const method = args[0];
-		
+		const extraArgs = args[1];
+
 		switch (method) {
 			case "start servers":
 				await this.IPC.server.start();
-				await this.RPC.server.start(args[1]);
+				await this.RPC.server.start(extraArgs[0]);
 				return "Servers have started";
 			case "connect to server":
-				const client_id = await this.RPC.client.connect(args[1], args[2]);
+				const client_id = await this.RPC.client.connect(extraArgs[0], extraArgs[1]);
 				if (client_id == "Invalid Password") {
 					return "Invalid Password";
 				} else {
 					return await this.IPC.client.connect(client_id);
 				}
 			case "send message":
-				return this.IPC.client.sendMessage(args[1]);
+				return this.IPC.client.sendMessage(extraArgs[0]);
 			default:
 				return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
 		}
