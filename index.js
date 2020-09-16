@@ -162,12 +162,11 @@ const ipcMethods = {
 				return "Servers have started";
 			case "connect to server":
 				const client_id = await this.RPC.client.connect(extraArgs[0], extraArgs[1]);
-				// if (client_id == "Invalid Password") {
-				// 	return "Invalid Password";
-				// } else {
-				// 	return await this.IPC.client.connect(client_id);
-				// }
-				return client_id;
+				if (client_id == "Invalid Password") {
+					return "Invalid Password";
+				} else {
+					return await this.IPC.client.connect(client_id);
+				}
 			case "send message":
 				return this.IPC.client.sendMessage(extraArgs[0]);
 			default:
