@@ -1,6 +1,6 @@
 const express = require('express');
-const wildcard = require('@wildcard-api/server/express');
-const { endpoints } = require('@wildcard-api/server');
+
+let wildcard, endpoints;
 
 const portchecker = require('../../portchecker');
 
@@ -12,19 +12,22 @@ class Server {
     #hasStartedServer = false;
     #server;
     constructor() {
+        wildcard = require('@wildcard-api/server/express');
+        endpoints = require('@wildcard-api/server').endpoints;
+
         for (var method in methods) {
             endpoints[method] = methods[method];
         }
-
-        app.use(wildcard());
     }
     async start(password) {
         if (this.#hasStartedServer)
             return "Server already started!"
+        
         var port = await findPort(3012);
 
         auth.setPassword(password);
-
+        
+        app.use(wildcard());
         this.#server = app.listen(port);
         this.#hasStartedServer = true;
 
@@ -50,13 +53,13 @@ class Server {
  */
 function findPort(port = 3000, increment = 10, maxRetries = 10) {
     return new Promise(async (resolve, reject) => {
-        var isPortAvailable = await portchecker(port);
+        var isPortClear = await portchecker(port);
         var cycles = 0;
-        while (isPortAvailable) {
+        while (isPortClear) {
             port += increment;
             cycles++;
 
-            isPortAvailable = await portchecker(port);
+            isPortClear = await portchecker(port);
 
             if (cycles == maxRetries) {
                 reject(`No Free Ports Found. Range searched: ${port}-${port + increment * maxRetries}`);

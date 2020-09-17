@@ -4,12 +4,6 @@ var currentUsers = 0;
 
 // RPC Endpoint methods
 exports.methods = {
-    // Debugging
-    hello: async function(name) {
-        return {
-            message: `Welcome ${name}!`
-        }
-    },
     connect: async function(password) {
         if (typeof password == "object" || typeof password == "boolean" || typeof password == "function")
             return "Invalid password type";
@@ -32,6 +26,7 @@ exports.methods = {
     getCurrentUsers: async function() {
         return currentUsers;
     },
+    // Debugging
     ping: async function() {
         return "Pong!";
     }

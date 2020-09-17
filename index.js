@@ -46,7 +46,7 @@ const createWindow = () => {
 	mainWindow.webContents.openDevTools();
 
 	// Once dom is ready
-	mainWindow.webContents.on("dom-ready", () => {
+	mainWindow.webContents.on("dom-ready", async () => {
 		// Set domHasLoaded to true
 		domHasLoaded = true;
 	});
@@ -86,6 +86,8 @@ let ipcclient;
 
 let keylogger;
 
+let currentInstance;
+
 function sendMessageToMainWindow(message) {
 	if (!domHasLoaded)return "DOM HASN'T LOADED YET!";
 
@@ -113,8 +115,8 @@ const ipcMethods = {
 			}
 		},
 		client: {
-			connect: async function(clientId) {
-				ipcclient = new IPCClient(clientId, sendMessageToMainWindow);
+			connect: async function(clientId, host) {
+				ipcclient = new IPCClient(clientId, host, sendMessageToMainWindow);
 				return await ipcclient.connect();
 			},
 			disconnect: function() {
@@ -157,20 +159,35 @@ const ipcMethods = {
 
 		switch (method) {
 			case "start servers":
+				if (currentInstance === "Server")
+					return "Server already started!";
+				else if (currentInstance === "Client")
+					return "You cant be a server when you're a client!";
+
 				await this.IPC.server.start();
 				await this.RPC.server.start(extraArgs[0]);
+
+				currentInstance = "Server";
+
 				return "Servers have started";
 			case "connect to server":
-				const client_id = await this.RPC.client.connect(extraArgs[0], extraArgs[1]);
-				if (client_id == "Invalid Password") {
-					return "Invalid Password";
-				} else {
-					return await this.IPC.client.connect(client_id);
-				}
+				if (currentInstance === "Client")
+					return "Already connected to server!";
+				else if (currentInstance === "Server")
+					return "You can't be a server when you're a client!";
+
+				const msg = this.RPC.client.connect(extraArgs[0], extraArgs[1]);
+
+				// if (client_id == "Invalid Password") {
+				// 	return "Invalid Password";
+				// } else {
+				// 	return await this.IPC.client.connect(client_id, extraArgs);
+				// }
+				return msg;
 			case "send message":
 				return this.IPC.client.sendMessage(extraArgs[0]);
 			default:
 				return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
 		}
 	}
-}
+};
