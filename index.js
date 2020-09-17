@@ -86,7 +86,7 @@ let ipcclient;
 
 let keylogger;
 
-let currentInstance;
+let currentInstance = "Standby";
 
 function sendMessageToMainWindow(message) {
 	if (!domHasLoaded)return "DOM HASN'T LOADED YET!";
@@ -103,8 +103,8 @@ ipcMain.handle("mainWindow", async (e, ...args) => {
 const ipcMethods = {
 	IPC: {
 		server: {
-			start: async function() {
-				ipcserver = new IPCServer(sendMessageToMainWindow);
+			start: async function(host) {
+				ipcserver = new IPCServer(host, sendMessageToMainWindow);
 				return await ipcserver.start();
 			},
 			stop: function() {
@@ -164,7 +164,7 @@ const ipcMethods = {
 				else if (currentInstance === "Client")
 					return "You cant be a server when you're a client!";
 
-				await this.IPC.server.start();
+				await this.IPC.server.start(extraArgs[0]);
 				await this.RPC.server.start(extraArgs[0]);
 
 				currentInstance = "Server";
@@ -176,14 +176,15 @@ const ipcMethods = {
 				else if (currentInstance === "Server")
 					return "You can't be a server when you're a client!";
 
-				const msg = this.RPC.client.connect(extraArgs[0], extraArgs[1]);
+				const client_id = await this.RPC.client.connect(extraArgs[0], extraArgs[1]);
 
-				// if (client_id == "Invalid Password") {
-				// 	return "Invalid Password";
-				// } else {
-				// 	return await this.IPC.client.connect(client_id, extraArgs);
-				// }
-				return msg;
+				currentInstance = "Client";
+
+				if (client_id == "Invalid Password") {
+					return "Invalid Password";
+				} else {
+					return await this.IPC.client.connect(client_id, extraArgs[1]);
+				}
 			case "send message":
 				return this.IPC.client.sendMessage(extraArgs[0]);
 			default:

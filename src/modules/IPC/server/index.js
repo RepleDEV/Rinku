@@ -9,35 +9,35 @@ class Server {
     #hasStartedServer = false;
     /**
      * Server Constructor
+     * @param {string} host Hostname. Usually local IP
      * @param {function} callback Callback function when there's a message
      */
-    constructor(callback) {
+    constructor(host = "localhost", callback) {
         if (typeof callback != "function")
             throw new Error("Callback function provided.");
 
-        ipc.config.logger = callback;
+        ipc.config.logger = log => {
+            callback(
+                {
+                    eventType: "IPCLog",
+                    log: log
+                }
+            );
+        };
 
         this.callback = callback;
+        this.host = host;
     }
     /**
      * Start said server
      */
     async start() {
-        if (this.#hasStartedServer)return "Server already started";
-
-        var port = 3011;
-
-        var isPortAvailable = await portchecker(port);
-        while (isPortAvailable) {
-            port += 10;
-            isPortAvailable = await portchecker(port);
-        }
+        if (this.#hasStartedServer)
+            return "Server already started";
 
         ipc.config.id = `rinku_ipc_server`;
-        ipc.config.stopRetrying = 0;
-        ipc.config.networkPort = port;
-
-        ipc.serve(() => {
+        ipc.config.stopRetrying = true;
+        ipc.serveNet(this.host, 3011, () => {
             ipc.server.on("message", message => {
                 this.callback(
                     {
@@ -66,7 +66,7 @@ class Server {
         this.#hasStartedServer = true;
         ipc.server.start();
 
-        return `Server has started on port: ${port}!`;
+        return `Server has started on port: 3011!`;
     }
     stop() {
         if (!this.#hasStartedServer)

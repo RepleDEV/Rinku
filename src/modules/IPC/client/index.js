@@ -22,7 +22,10 @@ class Client {
         ipc.config.id = clientId;
         // If host is a string and also has length, return host, otherwise return localhost
         ipc.config.networkHost = typeof host == "string" && host.length > 0 ? host : "localhost";
+        ipc.config.networkPort = 3011;
         ipc.config.stopRetrying = true;
+
+        console.log(ipc.config.networkHost);
 
         this.clientId = clientId;
         this.host = host;
