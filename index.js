@@ -1,13 +1,8 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
-const IPCServer = require('./src/modules/IPC/server');
-const IPCClient = require('./src/modules/IPC/client');
-
-const RPCServer = require('./src/modules/RPC/server');
-const RPCClient = require('./src/modules/RPC/client');
-
-const KeyLogger = require('./src/modules/keylogger');
+const Server = require('./src/modules/server');
+const Client = require('./src/modules/client');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
@@ -78,11 +73,7 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-let rpcserver;
-let ipcserver;
-
-let rpcclient;
-let ipcclient;
+let server, client;
 
 let keylogger;
 
@@ -101,52 +92,15 @@ ipcMain.handle("mainWindow", async (e, ...args) => {
 });
 
 const ipcMethods = {
-	IPC: {
-		server: {
-			start: async function(host) {
-				ipcserver = new IPCServer(host, sendMessageToMainWindow);
-				return await ipcserver.start();
-			},
-			stop: function() {
-				return ipcserver.stop();
-			},
-			sendMessage: function(message) {
-				return ipcserver.emit(message);
-			}
-		},
-		client: {
-			connect: async function(clientId, host) {
-				ipcclient = new IPCClient(clientId, host, sendMessageToMainWindow);
-				return await ipcclient.connect();
-			},
-			disconnect: function() {
-				return ipcclient.disconnect();
-			},
-			sendMessage: function(message) {
-				return ipcclient.emit(message);
-			}
-		}
-	},
-	RPC: {
-		server: {
-			start: async function(password) {
-				rpcserver = new RPCServer();
-				return await rpcserver.start(password);
-			},
-			stop: function() {
-				return rpcserver.stop();
-			}
-		},
-		client: {
-			connect: async function(password, host) {
-				rpcclient = new RPCClient();
-				return await rpcclient.connect(password, host);
-			}
+	server: {
+		start: function(port, host, password) {
+			server = new Server(sendMessageToMainWindow);
+			return server.start(port, host, password);
 		}
 	},
 	keyLogger: {
 		start: function() {
-			keylogger = new KeyLogger(keyLoggerCallback);
+			keylogger = new KeyLogger(sendMessageToMainWindow);
 			return keylogger.start();
 		},
 		stop: function() {
@@ -158,35 +112,8 @@ const ipcMethods = {
 		const extraArgs = args[1];
 
 		switch (method) {
-			case "start servers":
-				if (currentInstance === "Server")
-					return "Server already started!";
-				else if (currentInstance === "Client")
-					return "You cant be a server when you're a client!";
-
-				await this.IPC.server.start(extraArgs[0]);
-				await this.RPC.server.start(extraArgs[0]);
-
-				currentInstance = "Server";
-
-				return "Servers have started";
-			case "connect to server":
-				if (currentInstance === "Client")
-					return "Already connected to server!";
-				else if (currentInstance === "Server")
-					return "You can't be a server when you're a client!";
-
-				const client_id = await this.RPC.client.connect(extraArgs[0], extraArgs[1]);
-
-				currentInstance = "Client";
-
-				if (client_id == "Invalid Password") {
-					return "Invalid Password";
-				} else {
-					return await this.IPC.client.connect(client_id, extraArgs[1]);
-				}
-			case "send message":
-				return this.IPC.client.sendMessage(extraArgs[0]);
+			case "start server":
+				return this.server.start(3011, "localhost");
 			default:
 				return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
 		}
