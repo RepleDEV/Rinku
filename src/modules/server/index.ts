@@ -1,17 +1,24 @@
 import * as net from "net";
 
 interface Sockets {
-    [key: string]:any
+    [key: string]: Socket
+}
+interface Socket {
+    socket: net.Socket,
+    id: string,
+    authorized: boolean,
+    extraData: any
 }
 
 class Server {
-    #server = net.createServer();
+    #server: net.Server = net.createServer();
     #sockets: Sockets = {};
 
     #setPassword: string | number;
 
     #hasStartedServer: boolean = false;
 
+    connectedUsers: number = 0;
     callback: Function;
     constructor(callback: Function) {
         this.callback = callback;
@@ -24,7 +31,10 @@ class Server {
 
         this.#server.listen(port, host, () => {
             this.callback({
-                eventType: "server.start"
+                eventType: "server.start",
+                port: port,
+                host: host,
+                password: password
             });
         });
 
@@ -35,7 +45,7 @@ class Server {
 
             this.#sockets[`${socket.remoteAddress}:${socket.remotePort}`] = {
                 socket: socket,
-                id: undefined,
+                id: `rinkuclient_${this.connectedUsers}`,
                 authorized: false,
                 extraData: {}
             };
@@ -46,7 +56,6 @@ class Server {
                 if (msg.method == "auth") {
                     if (msg.password === this.#setPassword) {
                         this.#sockets[`${socket.remoteAddress}:${socket.remotePort}`].authorized = true;
-                        this.#sockets[`${socket.remoteAddress}:${socket.remotePort}`].id = msg.id;
                         this.#sockets[`${socket.remoteAddress}:${socket.remotePort}`].extraData  = msg.extraData
                     } else {
                         socket.write("Invalid Password");
@@ -56,8 +65,17 @@ class Server {
 
                 this.callback({
                     eventType: "message",
-                    message: new TextDecoder().decode(new Uint8Array(data))
+                    message: msg
                 });
+            });
+
+            socket.on("close", () => {
+                for (var addr in this.#sockets) {
+                    const { socket: sock } = this.#sockets[addr];
+
+                    if (sock.remoteAddress === socket.remoteAddress && sock.remotePort === socket.remotePort) 
+                        delete this.#sockets[addr];
+                }
             });
         });
 
@@ -66,17 +84,24 @@ class Server {
     stop() {
         if (!this.#hasStartedServer)
             return "Server hasn't started yet!";
+        
         this.#server.close();
 
         return "Stopped server!";
     }
-    sendMessageToAll(message: string) {
+    sendMessageToAll(message: any) {
         if (!this.#hasStartedServer)
             return "Server hasn't started yet!";
         
-        this.#sockets.forEach(socket => {
-            socket.write(message);
-        });
+        for (var addr in this.#sockets) {
+            const { socket } = this.#sockets[addr];
+            socket.write(JSON.stringify({
+                method: "message",
+                message: message
+            }));
+        }
+        
+        return "Sent message!";
     }
 }
 

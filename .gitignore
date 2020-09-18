@@ -92,7 +92,7 @@ out/
 yarn.lock
 
 # TS out directory
-src/modules
+dist/
 
 # Temp
 temp/

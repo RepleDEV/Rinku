@@ -5,9 +5,9 @@
         "noImplicitAny": false,
         "removeComments": true,
         "baseUrl": ".",
-        "outDir": "src/modules",
+        "outDir": "dist/",
         "target": "ESNext"
     },
-    "include": ["TS/modules/**/*"],
+    "include": ["src/**/*"],
     "exclude": ["node_modules"]
 }
