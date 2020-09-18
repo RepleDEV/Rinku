@@ -93,3 +93,6 @@ yarn.lock
 
 # TS out directory
 src/modules
+
+# Temp
+temp/
