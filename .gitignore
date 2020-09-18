@@ -90,3 +90,6 @@ out/
 
 # Yarn lockfile
 yarn.lock
+
+# TS out directory
+src/modules
