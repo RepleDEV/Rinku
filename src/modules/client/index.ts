@@ -9,7 +9,7 @@ class Client {
     constructor(callback: Function) {
         this.callback = callback;
     }
-    connect(clientId: string, port: number, host: string = "localhost", password?: string, extraData?: string): Promise<string> {
+    connect(port: number, host: string = "localhost", password?: string | undefined, extraData?: any): Promise<string> {
         return new Promise((resolve, reject) => {
             this.#client.connect(port, host, () => {
                 this.callback({
@@ -23,6 +23,7 @@ class Client {
                     extraData: extraData
                 }));
             });
+
             this.#client.on("data", data => {
                 console.log(new TextDecoder().decode(new Uint8Array(data)));
             });

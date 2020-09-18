@@ -23,7 +23,7 @@ class Server {
     constructor(callback: Function) {
         this.callback = callback;
     }
-    start(port: number, host: string = "localhost", password?: string | number) {
+    start(port: number = 3011, host: string = "localhost", password?: string | number) {
         if (this.#hasStartedServer)
             return "Server already started!";
 
@@ -78,6 +78,8 @@ class Server {
                 }
             });
         });
+
+        this.#hasStartedServer = true;
 
         return "Started server!";
     }
