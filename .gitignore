@@ -90,3 +90,9 @@ out/
 
 # Yarn lockfile
 yarn.lock
+
+# TS out directory
+dist/
+
+# Temp
+temp/
