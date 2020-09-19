@@ -1,5 +1,7 @@
 import * as net from "net";
 
+import portchecker = require('../portchecker');
+
 interface Sockets {
     [key: string]: Socket
 }
@@ -8,6 +10,11 @@ interface Socket {
     id: string,
     authorized: boolean,
     extraData: any
+}
+
+interface ServerCallback {
+    eventType: string,
+    [key: string]: any
 }
 
 class Server {
@@ -20,12 +27,17 @@ class Server {
 
     connectedUsers: number = 0;
     callback: Function;
-    constructor(callback: Function) {
+    constructor(callback: (event: ServerCallback) => void) {
         this.callback = callback;
     }
-    start(port: number = 3011, host: string = "localhost", password?: string | number) {
+    async start(port: number = 3011, host: string = "localhost", password?: string | number) {
         if (this.#hasStartedServer)
             return "Server already started!";
+
+        const isPortClear = await portchecker(port, host);
+
+        if (!isPortClear)
+            return "Address already in use!";
 
         this.#setPassword = password;
 

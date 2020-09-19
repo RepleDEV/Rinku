@@ -43,7 +43,7 @@ const createWindow = () => {
 	mainWindow.webContents.openDevTools();
 
 	// Once dom is ready
-	mainWindow.webContents.on("dom-ready", async () => {
+	mainWindow.webContents.on("dom-ready", () => {
 		// Set domHasLoaded to true
 		domHasLoaded = true;
 	});
@@ -82,8 +82,9 @@ const keylogger = new KeyLogger(sendMessageToMainWindow);
 
 let currentInstance: string = "Standby";
 
-function sendMessageToMainWindow(message: string) {
-	if (!domHasLoaded)return "DOM HASN'T LOADED YET!";
+function sendMessageToMainWindow(message: any) {
+	if (!domHasLoaded)
+		return "DOM HASN'T LOADED YET!";
 
 	mainWindow.webContents.send("mainWindowMsg", message);
 
@@ -96,8 +97,8 @@ ipcMain.handle("mainWindow", async (e, ...args) => {
 
 const ipcMethods = {
 	server: {
-		start: function(port: number, host: string, password?: string) {
-			return server.start(port, host, password);
+		start: async function(port: number, host: string, password?: string) {
+			return await server.start(port, host, password);
 		},
 		stop: function() {
 			return server.stop();
