@@ -4,9 +4,7 @@
         "allowJs": true,
         "removeComments": true,
         "baseUrl": ".",
-        "outDir": "dist/",
+        "outDir": "out/",
         "target": "ESNext"
-    },
-    "include": ["src/**/*"],
-    "exclude": ["node_modules", "tests"]
+    }
 }

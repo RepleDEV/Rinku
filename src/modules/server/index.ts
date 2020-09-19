@@ -21,7 +21,7 @@ class Server {
     #server: net.Server = net.createServer();
     #sockets: Sockets = {};
 
-    #setPassword: string | number;
+    #setPassword: string | number | undefined;
 
     #hasStartedServer: boolean = false;
 
@@ -30,7 +30,7 @@ class Server {
     constructor(callback: (event: ServerCallback) => void) {
         this.callback = callback;
     }
-    async start(port: number = 3011, host: string = "localhost", password?: string | number) {
+    async start(port: number = 3011, host: string = "localhost", password?: string | number | undefined) {
         if (this.#hasStartedServer)
             return "Server already started!";
 
@@ -66,12 +66,18 @@ class Server {
                 const msg = JSON.parse(new TextDecoder().decode(new Uint8Array(data)));
 
                 if (msg.method == "auth") {
-                    if (msg.password === this.#setPassword) {
+                    if (this.#setPassword === undefined) {
                         this.#sockets[`${socket.remoteAddress}:${socket.remotePort}`].authorized = true;
                         this.#sockets[`${socket.remoteAddress}:${socket.remotePort}`].extraData  = msg.extraData
                     } else {
-                        socket.write("Invalid Password");
-                        socket.end();
+                        if (msg.password === undefined) {
+                            socket.write("Password unprovided");
+                        } else if (msg.password === this.#setPassword) {
+                            this.#sockets[`${socket.remoteAddress}:${socket.remotePort}`].authorized = true;
+                            this.#sockets[`${socket.remoteAddress}:${socket.remotePort}`].extraData  = msg.extraData
+                        } else {
+                            socket.write("Invalid Password");
+                        }
                     }
                 }
 
