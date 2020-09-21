@@ -2,7 +2,9 @@ import * as net from "net";
 
 interface ClientCallback {
     eventType: string,
-    [key: string]: any
+    message?: any
+    reason?: string,
+    error?: any
 }
 
 class Client {
@@ -20,6 +22,7 @@ class Client {
                 this.callback({
                     eventType: "client.connect"
                 });
+                
                 resolve("Connected!");
 
                 this.#client.write(JSON.stringify({
@@ -34,7 +37,10 @@ class Client {
 
                 if (msg.type == "auth.reject") {
                     if (msg.reason == "Invalid Password") {
-                        this.callback(msg);
+                        this.callback({
+                            eventType: "auth.reject",
+                            reason: "Invalid Password"
+                        });
                     }
                 } else {
                     this.callback({

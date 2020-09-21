@@ -2,6 +2,9 @@ import * as net from "net";
 
 import portchecker = require('../portchecker');
 
+type PasswordTypes = string | number | undefined;
+type EventTypes = "server.start" | "client.connect" | "client.message" | "client.data" | "client.disconnect" | "client.disconnect.force";
+
 interface Sockets {
     [key: string]: Socket
 }
@@ -12,8 +15,14 @@ interface Socket {
 }
 
 interface ServerCallback {
-    eventType: string,
-    [key: string]: any
+    eventType: EventTypes,
+    port?: number,
+    host?: string,
+    password?: PasswordTypes,
+    extraData?: any,
+    clientId: string,
+    message?: any,
+    data?: any
 }
 
 class Server {
@@ -31,7 +40,7 @@ class Server {
         this.callback = callback;
     }
 
-    async start(port: number = 3011, host: string = "localhost", password?: string | number | undefined) {
+    async start(port: number = 3011, host: string = "localhost", password?: PasswordTypes) {
         if (this.#hasStartedServer)
             return "Server already started!";
 
