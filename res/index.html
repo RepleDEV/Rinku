@@ -6,17 +6,18 @@
         <link rel="stylesheet" href="styles/index.css">
     </head>
     <body>
-        <div class="stdout">
-            <p>Current Mouse: <span id="currentMouse"></span></p>
+        <div class="menu main">
+            <button id="btn_server">Server</button>
+            <button id="btn_client">Client</button>
         </div>
-        <main>
-			<button id="serverbtn">
-                SERVER
-            </button>
-            <button id="clientbtn">
-                CLIENT
-            </button>
-        </main>
+        <div class="menu server">
+            <input type="text" id="input_server_send_msg">
+            <button id="btn_server_send_msg">Send Message</button>
+        </div>
+        <div class="menu client">
+            <input type="text" id="input_client_send_msg">
+            <button id="btn_client_send_msg">Send Message</button>
+        </div>
 	</body>
     <script src="./scripts/main.js"></script>
 </html>
