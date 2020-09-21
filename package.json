@@ -16,7 +16,7 @@
   },
   "keywords": [],
   "author": {
-    "name": "Gonpachiro Kamaboko",
+    "name": "RepleDEV",
     "email": "54616266+RepleDEV@users.noreply.github.com"
   },
   "license": "MIT",
@@ -25,7 +25,8 @@
       "packagerConfig": {
         "ignore": [
           "tests/",
-          "src/"
+          "src/",
+          "temp/"
         ]
       },
       "makers": [
