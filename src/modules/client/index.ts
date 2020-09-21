@@ -16,26 +16,53 @@ class Client {
     }
     connect(port: number, host: string = "localhost", password?: string | undefined, extraData?: any): Promise<string> {
         return new Promise((resolve, reject) => {
-            try {
-                this.#client.connect(port, host, () => {
+            this.#client.connect(port, host, () => {
+                this.callback({
+                    eventType: "client.connect"
+                });
+                resolve("Connected!");
+
+                this.#client.write(JSON.stringify({
+                    type: "auth",
+                    password: password,
+                    extraData: extraData
+                }));
+            });
+
+            this.#client.on("data", data => {
+                const msg = JSON.parse(new TextDecoder().decode(new Uint8Array(data)));
+
+                if (msg.type == "auth.reject") {
+                    if (msg.reason == "Invalid Password") {
+                        this.callback(msg);
+                    }
+                } else {
                     this.callback({
-                        eventType: "client.connect"
+                        eventType: "message",
+                        message: msg.message
                     });
-                    resolve("Connected!");
-    
-                    this.#client.write(JSON.stringify({
-                        method: "auth",
-                        password: password,
-                        extraData: extraData
-                    }));
+                }
+            });
+
+            this.#client.on("error", err => {
+                if (err.message.includes("ECONNRESET"))
+                    this.callback({
+                        eventType: "client.disconnect",
+                        reason: "Lost connection / Forcefully Disconnected"
+                    });
+                else if (err.message.includes("ECONNREFUSED")) 
+                    this.callback({
+                        eventType: "client.error",
+                        error: "ECONNREFUSED: No connection found"
+                    });
+            });
+
+            this.#client.on("end", () => {
+                this.callback({
+                    eventType: "client.disconnect",
+                    reason: "Ended connection by server / client"
                 });
-    
-                this.#client.on("data", data => {
-                    console.log(new TextDecoder().decode(new Uint8Array(data)));
-                });
-            } catch (error) {
-                reject(error);
-            }
+            });
         });
     }
     disconnect() {
@@ -46,7 +73,13 @@ class Client {
 
         return "Disconnected";
     }
-    sendMessage(message: string) {
+    retryAuth(password: string) {
+        this.#client.write(JSON.stringify({
+            type: "auth",
+            password: password
+        }));
+    }
+    sendMessage(message: any) {
         if (this.#hasConnected)
             return "Haven't connected to server yet!";
 
