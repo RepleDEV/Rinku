@@ -29,7 +29,7 @@ $ npm run build
 $ npm run watch
 ```
 
-## Compile
+## Compile / Make
 ```bash
 $ npm run make
 ```
