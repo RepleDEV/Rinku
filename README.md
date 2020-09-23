@@ -8,3 +8,28 @@
 
 ## Current Released Version:
 PROTOTYPE ¯\\\_(ツ)_/¯
+
+## Setup
+```bash
+$ npm i; npm start
+```
+
+## Testing
+```bash
+$ npm test
+```
+
+## TS Build
+```bash
+$ npm run build
+```
+
+## TS watch
+```bash
+$ npm run watch
+```
+
+## Compile
+```bash
+$ npm run make
+```
