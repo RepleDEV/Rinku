@@ -20,7 +20,7 @@ interface ServerCallback {
     host?: string,
     password?: PasswordTypes,
     extraData?: any,
-    clientId: string,
+    clientId?: string,
     message?: any,
     data?: any
 }
@@ -34,7 +34,7 @@ class Server {
     #hasStartedServer: boolean = false;
 
     connectedUsersTotal: number = 0; // Total nums of users that has connected to the server (doesn't decrease)
-    callback: Function;
+    callback: (event: ServerCallback) => void;
 
     constructor(callback: (event: ServerCallback) => void) {
         this.callback = callback;

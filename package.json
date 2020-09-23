@@ -68,11 +68,14 @@
     ]
   },
   "dependencies": {
+    "@types/lodash": "^4.14.161",
     "@types/node": "12.12.62",
     "electron-squirrel-startup": "^1.0.0",
     "iohook": "^0.6.6",
     "jquery": "^3.5.1",
-    "keycode": "^2.2.0"
+    "keycode": "^2.2.0",
+    "lodash": "^4.17.20",
+    "robotjs": "^0.6.0"
   },
   "devDependencies": {
     "@electron-forge/cli": "6.0.0-beta.53",

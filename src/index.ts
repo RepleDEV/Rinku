@@ -1,5 +1,7 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
+import * as robotjs from "robotjs";
+import * as _ from "lodash";
 
 import Server = require('./modules/server');
 import Client = require('./modules/client');
@@ -73,8 +75,12 @@ app.on('activate', () => {
 	}
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
+/* 
+	
+	1 ==> Main IPC server / client functions
+
+*/
+
 const server = new Server(sendMessageToMainWindow);
 const client = new Client(sendMessageToMainWindow);
 
@@ -118,6 +124,9 @@ const ipcMethods = {
 		},
 		sendMessage(message: any) {
 			return client.sendMessage(message);
+		},
+		retryAuth(password: string) {
+			return client.retryAuth(password);
 		}
 	},
 	keyLogger: {
@@ -157,10 +166,115 @@ const ipcMethods = {
 					return ipcMethods.server.sendMessage(extraArgs[0]);
 				else 
 					return ipcMethods.client.sendMessage(extraArgs[0]);
+			case "connect to server":
+				if (currentInstance == "Server")
+					return "You can't be a client if you're a server!";
+				else if (currentInstance == "Client")
+					return "Already connnected to server!";
+
+				currentInstance = "Client";
+
+				return await ipcMethods.client.connect(extraArgs[0], extraArgs[1], extraArgs[2], {
+					screen: robotjs.getScreenSize()
+				});
+			case "disconnect from server":
+				if (currentInstance != "Client")
+					return "You aren't connected to a server!";
+
+				return ipcMethods.client.disconnect();
+			case "retry auth":
+				if (currentInstance == "Server")
+					return "You can't be a client if you're a server!";
+				
+				return ipcMethods.client.retryAuth(extraArgs[0]);
 			case "start keylogger":
 				return ipcMethods.keyLogger.start();
+			case "update cursor":
+				Cursor.update(extraArgs[0], extraArgs[1]);
+				return "Updated";
 			default:
 				return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
 		}
 	}
 };
+
+/* 
+
+	2 ==> Main ROBOTJS functions
+
+*/
+interface ScreenMapObject {
+	width: number,
+	height: number
+}
+
+type ScreenMap = [
+	[ScreenMapObject | null, ScreenMapObject | null, ScreenMapObject | null],
+	[ScreenMapObject | null, ScreenMapObject | null, ScreenMapObject | null]
+]
+
+const screenSize = robotjs.getScreenSize();
+
+let cursorCoord: [number, number] = [0,0];
+
+let screenMap: ScreenMap = [
+	[null, null, null],
+	[null, screenSize, null]
+];
+
+let onScreenEdge: boolean = false;
+
+const restingPlace = [Math.round(screenSize.width / 2), Math.round(screenSize.height * 0.05)];
+
+const Cursor = {
+	update: function(mouseX: number, mouseY: number): void {
+		if (onScreenEdge) {
+			// Distance from restingPlace
+			var distance = [mouseX - restingPlace[0], mouseY - restingPlace[1]];
+
+			cursorCoord[0] += distance[0];
+			cursorCoord[1] += distance[1];
+
+			cursorCoord[1] = cursorCoord[1] <= 0 ? 0 : cursorCoord[1];
+			cursorCoord[1] = cursorCoord[1] >= screenSize.width ? screenSize.width : cursorCoord[1];
+
+			if (cursorCoord[0] >= 0) {
+				if (screenMap[1][0] !== null) {
+					Cursor.move(cursorCoord[0], cursorCoord[1]);
+
+					onScreenEdge = false;
+					
+					return;
+				}
+			} else {
+				Cursor.reset();
+			}
+		} else {
+			cursorCoord = [mouseX, mouseY];
+		}
+
+		// If there's a screen on the left
+		if (screenMap[1][0] !== null) {
+			// Check if it's on edge
+			if (Cursor.onScreenEdge("w", mouseX, mouseY) && !onScreenEdge) {
+				Cursor.reset();
+				
+				onScreenEdge = true;
+			}
+		}
+	},
+	reset: function():void {
+		robotjs.moveMouse(restingPlace[0], restingPlace[1]);
+	},
+	onScreenEdge: function(edge: "n" | "e" | "w" | "s", mouseX: number, mouseY: number) {
+		switch (edge) {
+			case "n": return mouseY <= 0;
+			case "e": return mouseX >= screenSize.width;
+			case "w": return mouseX <= 0;
+			case "s": return mouseY >= screenSize.height;
+		}
+	},
+	move: function(mouseX: number, mouseY: number) {
+		robotjs.moveMouse(mouseX, mouseY);
+	}
+}

@@ -12,7 +12,7 @@ class Client {
 
     #hasConnected: boolean = false;
 
-    callback: Function;
+    callback: (event: ClientCallback) => void;
     constructor(callback: (event: ClientCallback) => void) {
         this.callback = callback;
     }
