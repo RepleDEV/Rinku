@@ -1,7 +1,9 @@
 import * as net from "net";
 
+type EventTypes = "client.connect" | "client.disconnect" | "client.error" | "auth.reject" | "message";
+
 interface ClientCallback {
-    eventType: string,
+    eventType: EventTypes,
     message?: any
     reason?: string,
     error?: any
@@ -13,6 +15,7 @@ class Client {
     #hasConnected: boolean = false;
 
     callback: (event: ClientCallback) => void;
+
     constructor(callback: (event: ClientCallback) => void) {
         this.callback = callback;
     }

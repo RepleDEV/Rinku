@@ -27,7 +27,11 @@ function switchMenu(menu) {
 }
 
 ipcRenderer.on("mainWindowMsg", (e, data) => {
-    console.log(data);
+    if (data.type = "log") {
+        console.log(data.log);
+    } else {
+        console.log(data);
+    }
 });
 
 window.onload = () => {

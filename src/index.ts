@@ -81,10 +81,32 @@ app.on('activate', () => {
 
 */
 
-const server = new Server(sendMessageToMainWindow);
-const client = new Client(sendMessageToMainWindow);
+const Callbacks = {
+	server: function(event: { [key: string]: any }) {
+		const { eventType, port, host, password, extraData, clientId, message, data } = event;
+		switch (eventType) {
+			case "server.start":
+				sendMessageToMainWindow({
+					type: "log",
+					log: `Started server in port: ${port}; host: ${host}; password: ${password}.`
+				});
+				extraData.width;
+				break;
+			case "client.disconnect":
+				sendMessageToMainWindow({
 
-const keylogger = new KeyLogger(sendMessageToMainWindow);
+				});
+			default:
+				break;
+		}
+	},
+	client: function(event: { [key: string]: any }) {
+
+	}
+}
+
+const server = new Server(Callbacks.server);
+const client = new Client(Callbacks.client);
 
 type CurrentInstances = "Standby" | "Server" | "Client";
 
@@ -150,7 +172,7 @@ const ipcMethods = {
 					return "You can't be a server when you're a client!";
 
 				currentInstance = "Server";
-				return ipcMethods.server.start(extraArgs[0], extraArgs[1], extraArgs[2]);
+				return await ipcMethods.server.start(extraArgs[0], extraArgs[1], extraArgs[2]);
 			case "stop server":
 				if (currentInstance != "Server") 
 					return "You must be a server / must first start a server to stop a server!";
@@ -197,34 +219,66 @@ const ipcMethods = {
 		}
 	}
 };
-
 /* 
 
 	2 ==> Main ROBOTJS functions
 
 */
+
 interface ScreenMapObject {
 	width: number,
-	height: number
+	height: number,
+	id: string
 }
 
-type ScreenMap = [
-	[ScreenMapObject | null, ScreenMapObject | null, ScreenMapObject | null],
-	[ScreenMapObject | null, ScreenMapObject | null, ScreenMapObject | null]
-]
+class ScreenMap {
+	#map = [];
+	constructor(width: number, height: number) {
+		for (var i = 0;i < width;i++) {
+			this.#map.push([]);
+			for (var j = 0;j < height;j++) {
+				this.#map[i].push(null);
+			}
+		}
+	}
+	set(screenWidth: number, screenHeight: number, id: string, x: number, y: number): void {
+		this.#map[x][y] = {
+			width: screenWidth,
+			height: screenHeight,
+			id: id
+		}
+	}
+	get(x: number, y: number): ScreenMapObject | null {
+		return this.#map[x][y];
+	}
+	clear(x: number, y: number):void {
+		this.#map[x][y] = null;
+	}
+	clearById(id: string) {
+		for (var i = 0;i < this.#map.length;i++) {
+			for (var j = 0;j < this.#map[i].length;i++) {
+				if (this.#map[i][j].id == id) {
+					this.clear(i, j);
+					return `Deleted screen in coordinates: (${i}, ${j})`;
+				}
+			}
+		}
+		return "No screens found that has a matching ID attachment.";
+	}
+}
+
+const keylogger = new KeyLogger(sendMessageToMainWindow);
 
 const screenSize = robotjs.getScreenSize();
 
 let cursorCoord: [number, number] = [0,0];
 
-let screenMap: ScreenMap = [
-	[null, null, null],
-	[null, screenSize, null]
-];
+let screenMap = new ScreenMap(3, 2);
+screenMap.set(screenSize.width, screenSize.height, "master", 2, 1);
 
 let onScreenEdge: boolean = false;
 
-const restingPlace = [Math.round(screenSize.width / 2), Math.round(screenSize.height * 0.05)];
+const restingPlace = [screenSize.width / 2, screenSize.height * 0.05].map(Math.round);
 
 const Cursor = {
 	update: function(mouseX: number, mouseY: number): void {
@@ -239,7 +293,7 @@ const Cursor = {
 			cursorCoord[1] = cursorCoord[1] >= screenSize.width ? screenSize.width : cursorCoord[1];
 
 			if (cursorCoord[0] >= 0) {
-				if (screenMap[1][0] !== null) {
+				if (screenMap.get(0, 1) !== null) {
 					Cursor.move(cursorCoord[0], cursorCoord[1]);
 
 					onScreenEdge = false;
@@ -254,7 +308,7 @@ const Cursor = {
 		}
 
 		// If there's a screen on the left
-		if (screenMap[1][0] !== null) {
+		if (screenMap.get(0, 1) !== null) {
 			// Check if it's on edge
 			if (Cursor.onScreenEdge("w", mouseX, mouseY) && !onScreenEdge) {
 				Cursor.reset();

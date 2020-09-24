@@ -29,7 +29,7 @@ class Server {
     #server: net.Server = net.createServer();
     #sockets: Sockets = {};
 
-    #setPassword: string | number | undefined;
+    #setPassword: PasswordTypes;
 
     #hasStartedServer: boolean = false;
 
@@ -149,7 +149,7 @@ class Server {
 
         this.#hasStartedServer = true;
 
-        return "Started server!";
+        return "Initiated server start function";
     }
     stop() {
         if (!this.#hasStartedServer)
@@ -173,6 +173,22 @@ class Server {
         }
         
         return "Sent message!";
+    }
+    sendMessageToClient(clientId: string, message: any) {
+        if (!this.#hasStartedServer)
+            return "Server hasn't started yet!";
+    
+        for (var addr in this.#sockets) {
+            const { socket, id } = this.#sockets[addr];
+            
+            if (id == clientId) {
+                socket.write(JSON.stringify({
+                    type: "message",
+                    message: message
+                }));
+            }
+        }
+        return "No clients found attached with the ID provided."
     }
 }
 
