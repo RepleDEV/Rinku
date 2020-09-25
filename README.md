@@ -1,6 +1,8 @@
 # Rinku (link)
 **Link** multiple computers together, use **one** mouse and **one** keyboard and CONTROL them all!
 
+Basically a better version of [this](https://www.microsoft.com/en-us/download/details.aspx?id=35460)
+
 ## Project Goals
 1. Connect multiple devices seamlessly with a 4x3 grid.
 2. Connection with less than 20 milliseconds of delay.
