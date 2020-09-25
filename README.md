@@ -4,7 +4,7 @@
 ## Project Goals
 1. Connect multiple devices seamlessly with a 4x3 grid.
 2. Connection with less than 20 milliseconds of delay.
-3. OS: Win32 (Windows), Darwin (MacOS), Linux.
+3. OS: Windows, MacOS (When i actually get a mac machine lol), Linux.
 
 ## Current Released Version:
 PROTOTYPE ¯\\\_(ツ)_/¯
