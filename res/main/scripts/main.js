@@ -26,7 +26,7 @@ function switchMenu(menu) {
     currentMenu = menu;
 }
 
-ipcRenderer.on("mainWindowMsg", (e, data) => {
+ipcRenderer.on("message", (e, data) => {
     if (data.type = "log") {
         console.log(data.log);
     } else {

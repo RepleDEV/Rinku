@@ -5,8 +5,7 @@
         "removeComments": true,
         "baseUrl": ".",
         "outDir": "dist/",
-        "target": "ESNext",
-        "lib": ["DOM"]
+        "target": "ESNext"
     },
     "include": ["src/**/*"],
     "exclude": ["node_modules", "tests"]
