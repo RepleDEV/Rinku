@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{729590C9-C5C7-FD5C-136F-1602EF23E7F4}</ProjectGuid>
+    <ProjectGuid>{2B18EA3F-5348-9E70-DAA2-A6E1E4922304}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>rinku_winmanager</RootNamespace>
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
@@ -36,7 +36,6 @@
     <ExecutablePath>$(ExecutablePath);$(MSBuildProjectDirectory)\..\bin\;$(MSBuildProjectDirectory)\..\bin\</ExecutablePath>
     <IgnoreImportLibrary>true</IgnoreImportLibrary>
     <IntDir>$(Configuration)\obj\$(ProjectName)\</IntDir>
-    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.node</TargetExt>
@@ -51,6 +50,7 @@
       <AdditionalIncludeDirectories>C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\include\node;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\src;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\deps\openssl\config;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\deps\openssl\openssl\include;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\deps\uv\include;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\deps\zlib;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\deps\v8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
+      <CompileAsWinRT>false</CompileAsWinRT>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <DisableSpecificWarnings>4351;4355;4800;4251;4275;4244;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ExceptionHandling>false</ExceptionHandling>
@@ -65,18 +65,12 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TreatWarningAsError>false</TreatWarningAsError>
       <WarningLevel>Level3</WarningLevel>
-      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
-    <Lib>
-      <AdditionalOptions>/LTCG:INCREMENTAL %(AdditionalOptions)</AdditionalOptions>
-    </Lib>
     <Link>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\\Users\\ragaz\\AppData\\Local\\node-gyp\\Cache\\14.8.0\\x64\\node.lib&quot;</AdditionalDependencies>
-      <AdditionalOptions>/LTCG:INCREMENTAL /ignore:4199 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/ignore:4199 %(AdditionalOptions)</AdditionalOptions>
       <DelayLoadDLLs>node.exe;%(DelayLoadDLLs)</DelayLoadDLLs>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <OptimizeReferences>true</OptimizeReferences>
       <OutputFile>$(OutDir)$(ProjectName).node</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetExt>.node</TargetExt>
@@ -91,6 +85,7 @@
     <ClCompile>
       <AdditionalIncludeDirectories>C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\include\node;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\src;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\deps\openssl\config;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\deps\openssl\openssl\include;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\deps\uv\include;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\deps\zlib;C:\Users\ragaz\AppData\Local\node-gyp\Cache\14.8.0\deps\v8\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <BufferSecurityCheck>true</BufferSecurityCheck>
+      <CompileAsWinRT>false</CompileAsWinRT>
       <DebugInformationFormat>OldStyle</DebugInformationFormat>
       <DisableSpecificWarnings>4351;4355;4800;4251;4275;4244;4267;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <ExceptionHandling>false</ExceptionHandling>
@@ -109,18 +104,12 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TreatWarningAsError>false</TreatWarningAsError>
       <WarningLevel>Level3</WarningLevel>
-      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
-    <Lib>
-      <AdditionalOptions>/LTCG:INCREMENTAL %(AdditionalOptions)</AdditionalOptions>
-    </Lib>
     <Link>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\\Users\\ragaz\\AppData\\Local\\node-gyp\\Cache\\14.8.0\\x64\\node.lib&quot;</AdditionalDependencies>
-      <AdditionalOptions>/LTCG:INCREMENTAL /ignore:4199 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/ignore:4199 %(AdditionalOptions)</AdditionalOptions>
       <DelayLoadDLLs>node.exe;%(DelayLoadDLLs)</DelayLoadDLLs>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <OptimizeReferences>true</OptimizeReferences>
       <OutputFile>$(OutDir)$(ProjectName).node</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <TargetExt>.node</TargetExt>
@@ -136,7 +125,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\lib\windows.cc"/>
-    <ClCompile Include="C:\Users\ragaz\AppData\Roaming\npm\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
+    <ClCompile Include="C:\Users\ragaz\AppData\Roaming\npm\node_modules\npm\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
   <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets"/>
