@@ -2,11 +2,10 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 import * as robotjs from "robotjs";
 import * as _ from "lodash";
+import * as windowmanager from "./modules/winmanager";
 
 import Server = require('./modules/server');
 import Client = require('./modules/client');
-
-import KeyLogger = require('./modules/keylogger');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
@@ -18,7 +17,10 @@ let domHasLoaded: boolean = false;
 // Main Window
 let mainWindow: BrowserWindow;
 
-const createWindow = () => {
+// Cursor Window
+let cursorWindow: BrowserWindow;
+
+const createMainWindow = () => {
   	// Create the browser window.
 	mainWindow = new BrowserWindow({
 		minWidth: 800,
@@ -39,7 +41,7 @@ const createWindow = () => {
 	mainWindow.maximize();
 
 	// and load the index.html of the app.
-	mainWindow.loadFile(path.join(__dirname, '../res/index.html'));
+	mainWindow.loadFile(path.join(__dirname, '../res/main/index.html'));
 
 	// Open the DevTools.
 	mainWindow.webContents.openDevTools();
@@ -48,14 +50,46 @@ const createWindow = () => {
 	mainWindow.webContents.on("dom-ready", () => {
 		// Set domHasLoaded to true
 		domHasLoaded = true;
+
+		
 	});
+};
+
+const createCursorWindow = () => {
+	cursorWindow = new BrowserWindow({
+		// Hide for now
+		show: false,
+		// Make it 100% constant
+		resizable: false,
+		movable: false,
+		// Frameless. No X, minimize, or maximize button
+		frame: false,
+
+		webPreferences: {
+			// Integrate require func
+			nodeIntegration: true
+		},
+		// Make it not show in the taskbar
+		skipTaskbar: true,
+		// And make it transparent
+		opacity: 0.2
+	});
+
+	cursorWindow.setMenuBarVisibility(false);
+
+	cursorWindow.setAlwaysOnTop(true, "normal");
+
+	cursorWindow.maximize();
+
+	cursorWindow.loadFile(path.join(__dirname, "../res/worker/index.html"))
 };
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
-	createWindow();
+	// createMainWindow();
+	createCursorWindow();
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -71,7 +105,7 @@ app.on('activate', () => {
 	// On OS X it's common to re-create a window in the app when the
 	// dock icon is clicked and there are no other windows open.
 	if (BrowserWindow.getAllWindows().length === 0) {
-		createWindow();
+		createMainWindow();
 	}
 });
 
@@ -80,6 +114,33 @@ app.on('activate', () => {
 	1 ==> Main IPC server / client functions
 
 */
+
+// Electron IPC
+function sendMessageToMainWindow(message: any) {
+	if (!domHasLoaded)
+		return "DOM HASN'T LOADED YET!";
+
+	mainWindow.webContents.send("message", message);
+
+	return "Sent message!";
+}
+
+function sendMessageToCursorWindow(message: any) {
+	if (!domHasLoaded)
+		return "DOM HASN'T LOADED YET!";
+	
+	cursorWindow.webContents.send("message", message);
+
+	return "Sent message!";
+}
+
+ipcMain.handle("mainWindow", async (e, ...args) => {
+	return await ipcMethods.exec(args);
+});
+
+ipcMain.handle("cursorWindow", async (e, ...args) => {
+	
+})
 
 const Callbacks = {
 	server: function(event: { [key: string]: any }) {
@@ -112,19 +173,6 @@ type CurrentInstances = "Standby" | "Server" | "Client";
 
 let currentInstance: CurrentInstances = "Standby";
 
-function sendMessageToMainWindow(message: any) {
-	if (!domHasLoaded)
-		return "DOM HASN'T LOADED YET!";
-
-	mainWindow.webContents.send("mainWindowMsg", message);
-
-	return "Sent message!";
-}
-
-ipcMain.handle("mainWindow", async (e, ...args) => {
-	return await ipcMethods.exec(args);
-});
-
 const ipcMethods = {
 	server: {
 		start: async function(port?: number, host?: string, password?: string) {
@@ -149,14 +197,6 @@ const ipcMethods = {
 		},
 		retryAuth(password: string) {
 			return client.retryAuth(password);
-		}
-	},
-	keyLogger: {
-		start: function() {
-			return keylogger.start();
-		},
-		stop: function() {
-			return keylogger.stop();
 		}
 	},
 	exec: async function(args: any[]) {
@@ -209,11 +249,10 @@ const ipcMethods = {
 					return "You can't be a client if you're a server!";
 				
 				return ipcMethods.client.retryAuth(extraArgs[0]);
-			case "start keylogger":
-				return ipcMethods.keyLogger.start();
-			case "update cursor":
-				Cursor.update(extraArgs[0], extraArgs[1]);
-				return "Updated";
+			case "tests":
+				cursorWindow.show();
+				cursorWindow.focus();
+				return;
 			default:
 				return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
 		}
@@ -267,8 +306,6 @@ class ScreenMap {
 	}
 }
 
-const keylogger = new KeyLogger(sendMessageToMainWindow);
-
 const screenSize = robotjs.getScreenSize();
 
 let cursorCoord: [number, number] = [0,0];
@@ -281,7 +318,9 @@ let onScreenEdge: boolean = false;
 const restingPlace = [screenSize.width / 2, screenSize.height * 0.05].map(Math.round);
 
 const Cursor = {
-	update: function(mouseX: number, mouseY: number): void {
+	update: function(): void {
+		const {x: mouseX, y: mouseY} = robotjs.getMousePos();
+
 		if (onScreenEdge) {
 			// Distance from restingPlace
 			var distance = [mouseX - restingPlace[0], mouseY - restingPlace[1]];
@@ -292,14 +331,22 @@ const Cursor = {
 			cursorCoord[1] = cursorCoord[1] <= 0 ? 0 : cursorCoord[1];
 			cursorCoord[1] = cursorCoord[1] >= screenSize.width ? screenSize.width : cursorCoord[1];
 
-			if (cursorCoord[0] >= 0) {
-				if (screenMap.get(0, 1) !== null) {
-					Cursor.move(cursorCoord[0], cursorCoord[1]);
+			if (cursorCoord[0] > 0) {
+				// if (screenMap.get(0, 1) !== null) {
+				// 	Cursor.move(cursorCoord[0], cursorCoord[1]);
 
-					onScreenEdge = false;
+				// 	onScreenEdge = false;
 					
-					return;
-				}
+				// 	return;
+				// }
+				Cursor.move(cursorCoord[0], cursorCoord[1]);
+
+				onScreenEdge = false;
+				
+				cursorWindow.blur();
+				cursorWindow.hide();
+
+				return;
 			} else {
 				Cursor.reset();
 			}
@@ -307,15 +354,30 @@ const Cursor = {
 			cursorCoord = [mouseX, mouseY];
 		}
 
-		// If there's a screen on the left
-		if (screenMap.get(0, 1) !== null) {
-			// Check if it's on edge
-			if (Cursor.onScreenEdge("w", mouseX, mouseY) && !onScreenEdge) {
-				Cursor.reset();
-				
-				onScreenEdge = true;
-			}
+		if (Cursor.onScreenEdge("w", mouseX, mouseY) && !onScreenEdge) {
+			Cursor.reset();
+			
+			onScreenEdge = true;
+
+			cursorWindow.show();
+			cursorWindow.focus();
 		}
+
+		// // If there's a screen on the left
+		// if (screenMap.get(0, 1) !== null) {
+		// 	// Check if it's on edge
+		// 	if (Cursor.onScreenEdge("w", mouseX, mouseY) && !onScreenEdge) {
+		// 		Cursor.reset();
+				
+		// 		onScreenEdge = true;
+		// 	}
+		// } else if (screenMap.get(2, 1) !== null) {
+		// 	if (Cursor.onScreenEdge("e", mouseX, mouseY) && !onScreenEdge) {
+		// 		Cursor.reset();
+				
+		// 		onScreenEdge = true;
+		// 	}
+		// }
 	},
 	reset: function():void {
 		robotjs.moveMouse(restingPlace[0], restingPlace[1]);
