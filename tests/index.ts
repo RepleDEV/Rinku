@@ -1,4 +1,10 @@
 import Connection = require('./connection.test');
 
-const connection = new Connection();
-connection.run();
+describe('Rinku Testing', () => {
+    const connection = new Connection();
+    connection.run();
+});
+
+after(() => {
+    process.exit(0);
+});
