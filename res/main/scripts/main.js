@@ -1,5 +1,5 @@
-const { ipcRenderer } = require('electron');
-const robotjs = require('robotjs');
+const { ipcRenderer } = require("electron");
+const robotjs = require("robotjs");
 
 window.$ = window.jQuery = require("jquery");
 
@@ -18,8 +18,7 @@ var currentMenu = "";
 // }
 
 function switchMenu(menu) {
-    if (currentMenu !== "")
-        $(`.menu.${currentMenu}`).hide();
+    if (currentMenu !== "") $(`.menu.${currentMenu}`).hide();
 
     $(`.menu.${menu}`).show();
 
@@ -27,7 +26,7 @@ function switchMenu(menu) {
 }
 
 ipcRenderer.on("message", (e, data) => {
-    if (data.type = "log") {
+    if ((data.type = "log")) {
         console.log(data.log);
     } else {
         console.log(data);

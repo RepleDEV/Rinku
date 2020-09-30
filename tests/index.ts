@@ -1,6 +1,6 @@
-import Connection = require('./connection.test');
+import Connection = require("./connection.test");
 
-describe('Rinku Testing', () => {
+describe("Rinku Testing", () => {
     const connection = new Connection();
     connection.run();
 });
