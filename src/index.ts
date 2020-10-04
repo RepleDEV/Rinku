@@ -14,7 +14,7 @@ if (require("electron-squirrel-startup")) {
     app.quit();
 }
 
-let domHasLoaded: boolean = false;
+let domHasLoaded = false;
 
 // Main Window
 let mainWindow: BrowserWindow;
@@ -52,6 +52,10 @@ const createMainWindow = () => {
     mainWindow.webContents.on("dom-ready", () => {
         // Set domHasLoaded to true
         domHasLoaded = true;
+
+        setInterval(() => {
+            Cursor.update();
+        }, 5);
     });
 };
 
@@ -88,7 +92,7 @@ const createCursorWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on("ready", () => {
-    // createMainWindow();
+    createMainWindow();
     createCursorWindow();
 });
 
@@ -160,6 +164,7 @@ const Callbacks = {
                 break;
             case "client.disconnect":
                 sendMessageToMainWindow({});
+                break;
             default:
                 break;
         }
@@ -281,63 +286,14 @@ const ipcMethods = {
 	2 ==> Main ROBOTJS functions
 
 */
-
-interface ScreenMapObject {
-    width: number;
-    height: number;
-    id: string;
-}
-
-class ScreenMap {
-    #map = [];
-    constructor(width: number, height: number) {
-        for (var i = 0; i < width; i++) {
-            this.#map.push([]);
-            for (var j = 0; j < height; j++) {
-                this.#map[i].push(null);
-            }
-        }
-    }
-    set(
-        screenWidth: number,
-        screenHeight: number,
-        id: string,
-        x: number,
-        y: number
-    ): void {
-        this.#map[x][y] = {
-            width: screenWidth,
-            height: screenHeight,
-            id: id,
-        };
-    }
-    get(x: number, y: number): ScreenMapObject | null {
-        return this.#map[x][y];
-    }
-    clear(x: number, y: number): void {
-        this.#map[x][y] = null;
-    }
-    clearById(id: string) {
-        for (var i = 0; i < this.#map.length; i++) {
-            for (var j = 0; j < this.#map[i].length; i++) {
-                if (this.#map[i][j].id == id) {
-                    this.clear(i, j);
-                    return `Deleted screen in coordinates: (${i}, ${j})`;
-                }
-            }
-        }
-        return "No screens found that has a matching ID attachment.";
-    }
-}
-
 const screenSize = robotjs.getScreenSize();
 
 let cursorCoord: [number, number] = [0, 0];
 
-let screenMap = new ScreenMap(3, 2);
+const screenMap = new ScreenMap(3, 2);
 screenMap.set(screenSize.width, screenSize.height, "master", 2, 1);
 
-let onScreenEdge: boolean = false;
+let onScreenEdge = false;
 
 const restingPlace = [screenSize.width / 2, screenSize.height * 0.05].map(
     Math.round
@@ -349,7 +305,10 @@ const Cursor = {
 
         if (onScreenEdge) {
             // Distance from restingPlace
-            var distance = [mouseX - restingPlace[0], mouseY - restingPlace[1]];
+            const distance = [
+                mouseX - restingPlace[0],
+                mouseY - restingPlace[1],
+            ];
 
             cursorCoord[0] += distance[0];
             cursorCoord[1] += distance[1];
@@ -375,6 +334,8 @@ const Cursor = {
                 cursorWindow.blur();
                 cursorWindow.hide();
 
+                winswitcher.activateStoredWindow();
+
                 return;
             } else {
                 Cursor.reset();
@@ -387,6 +348,8 @@ const Cursor = {
             Cursor.reset();
 
             onScreenEdge = true;
+
+            winswitcher.storeActiveWindow();
 
             cursorWindow.show();
             cursorWindow.focus();

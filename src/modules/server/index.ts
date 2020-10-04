@@ -37,9 +37,9 @@ class Server {
 
     #setPassword: PasswordTypes;
 
-    #hasStartedServer: boolean = false;
+    #hasStartedServer = false;
 
-    connectedUsersTotal: number = 0; // Total nums of users that has connected to the server (doesn't decrease)
+    connectedUsersTotal = 0; // Total nums of users that has connected to the server (doesn't decrease)
     callback: (event: ServerCallback) => void;
 
     constructor(callback: (event: ServerCallback) => void) {
@@ -50,7 +50,7 @@ class Server {
         port: number = 3011,
         host: string = "localhost",
         password?: PasswordTypes
-    ) {
+    ): Promise<string> {
         if (this.#hasStartedServer) return "Server already started!";
 
         const isPortClear = await portchecker(port, host);
@@ -135,7 +135,7 @@ class Server {
             });
 
             socket.on("close", () => {
-                for (var addr in this.#sockets) {
+                for (const addr in this.#sockets) {
                     const { socket: sock } = this.#sockets[addr];
 
                     if (
@@ -154,7 +154,7 @@ class Server {
 
             socket.on("error", (err) => {
                 if (err.message.includes("ECONNRESET")) {
-                    for (var addr in this.#sockets) {
+                    for (const addr in this.#sockets) {
                         const { socket: sock } = this.#sockets[addr];
 
                         if (
@@ -177,17 +177,17 @@ class Server {
 
         return "Initiated server start function";
     }
-    stop() {
+    stop(): string {
         if (!this.#hasStartedServer) return "Server hasn't started yet!";
 
         this.#server.close();
 
         return "Stopped server!";
     }
-    sendMessageToAll(message: any) {
+    sendMessageToAll(message: any): string {
         if (!this.#hasStartedServer) return "Server hasn't started yet!";
 
-        for (var addr in this.#sockets) {
+        for (const addr in this.#sockets) {
             const { socket } = this.#sockets[addr];
 
             socket.write(
@@ -200,10 +200,10 @@ class Server {
 
         return "Sent message!";
     }
-    sendMessageToClient(clientId: string, message: any) {
+    sendMessageToClient(clientId: string, message: any): string {
         if (!this.#hasStartedServer) return "Server hasn't started yet!";
 
-        for (var addr in this.#sockets) {
+        for (const addr in this.#sockets) {
             const { socket, id } = this.#sockets[addr];
 
             if (id == clientId) {

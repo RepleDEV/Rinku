@@ -1,5 +1,4 @@
 const { ipcRenderer } = require("electron");
-const robotjs = require("robotjs");
 
 window.$ = window.jQuery = require("jquery");
 
@@ -26,7 +25,7 @@ function switchMenu(menu) {
 }
 
 ipcRenderer.on("message", (e, data) => {
-    if ((data.type = "log")) {
+    if (data.type == "log") {
         console.log(data.log);
     } else {
         console.log(data);
@@ -34,7 +33,6 @@ ipcRenderer.on("message", (e, data) => {
 });
 
 window.onload = () => {
-    updateCursor();
     switchMenu("main");
 };
 
@@ -62,11 +60,3 @@ $("#btn_client_send_msg").on("click", async () => {
 
     $("#input_client_send_msg").val("");
 });
-
-function updateCursor() {
-    requestAnimationFrame(updateCursor);
-
-    const cursor = robotjs.getMousePos();
-
-    sendMethod("update cursor", cursor.x, cursor.y);
-}

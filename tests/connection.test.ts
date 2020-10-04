@@ -1,16 +1,14 @@
 // Server connection test
-import * as assert from "assert";
-
 import Test = require("./test");
 
 import Server = require("../src/modules/server");
 import Client = require("../src/modules/client");
 
-var server: Server;
-var client: Client;
+let server: Server;
+let client: Client;
 
 class Connection extends Test {
-    run() {
+    run(): void {
         describe("Connection Test", () => {
             describe("Server Start", () => {
                 it("Should start server without any errors", (done) => {

@@ -17,7 +17,7 @@ interface ClientCallback {
 class Client {
     #client = new net.Socket();
 
-    #hasConnected: boolean = false;
+    #hasConnected = false;
 
     callback: (event: ClientCallback) => void;
 
@@ -30,7 +30,7 @@ class Client {
         password?: string | undefined,
         extraData?: any
     ): Promise<string> {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             this.#client.connect(port, host, () => {
                 this.callback({
                     eventType: "client.connect",

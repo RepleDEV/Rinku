@@ -1,6 +1,4 @@
 abstract class Test {
-    constructor() {}
-
     abstract run(): any;
 }
 

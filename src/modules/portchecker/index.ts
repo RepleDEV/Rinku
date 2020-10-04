@@ -9,10 +9,9 @@ const server = http.createServer();
  *
  * @returns True if clear, false if already listened to
  */
-function portchecker(
-    port: number,
-    host: string = "localhost"
-): Promise<boolean> {
+function portchecker(port: number, host: string): Promise<boolean> {
+    host = host || "localhost";
+
     return new Promise((resolve) => {
         server.on("listening", () => {
             resolve(true);
