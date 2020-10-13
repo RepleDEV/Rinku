@@ -89,44 +89,6 @@ class ScreenMap {
             }
         }
     }
-    calculateEdgeIntersect(pos1: CoordinateObject, pos2: CoordinateObject): ScreenEdgeCoordinateObject {
-        if (_.isEqual(pos1, pos2)) {
-            return;
-        }        
-        
-        let closestDistanceX: number = Number.MAX_VALUE;
-        let closestDistanceY: number = Number.MAX_VALUE;
-        let closestDistanceIdX: string;
-        let closestDistanceIdY: string;
-
-        for (const { width, height, pos, id } of map) {
-            const xEdges = [pos.x, pos.x + width];
-            const yEdges = [pos.y, pos.y + height];
-            for (const edge of xEdges) {
-                const isInRange = _.inRange(edge, pos1.x, pos2.x);
-                const distance = Math.abs(edge - pos1.x);
-                if (isInRange && distance < closestDistanceX) {
-                    closestDistanceX = distance;
-                    closestDistanceIdX = id;
-                }
-            }
-
-            for (const edge of yEdges) {
-                const isInRange = _.inRange(edge, pos1.y, pos2.y);
-                const distance = Math.abs(edge - pos1.y);
-                if (isInRange && distance < closestDistanceY) {
-                    closestDistanceY = distance;
-                    closestDistanceIdY = id;
-                }
-            }
-        }
-
-        console.log(
-            closestDistanceX, closestDistanceIdX,
-            closestDistanceY, closestDistanceIdY
-        );
-        return;
-    }
     setActive(id: string): boolean {
         // First, make it true.
         for (let i = 0;i < map.length;i++) {
@@ -151,8 +113,8 @@ class ScreenMap {
             }
         }
     }
-    onScreenEdge({ x: mouseX, y: mouseY }: CoordinateObject): "n" | "e" | "w" | "s" {
-        const screen = this.getById("master");
+    onScreenEdge({ x: mouseX, y: mouseY }: CoordinateObject, id: string = "master"): "n" | "e" | "w" | "s" {
+        const screen = this.getById(id);
         if (mouseY <= 0) 
             return "n";
         else if (mouseX >= screen.width - 1) 

@@ -55,17 +55,14 @@ const createMainWindow = () => {
         // Set domHasLoaded to true
         domHasLoaded = true;
 
-        // screenMap.addScreen(1366, 768, {x: -1366, y: 0}, "a");
-        // screenMap.addScreen(1366, 768, {x: 1366, y: 0}, "b");
-        console.log(screenMap.calculateEdgeIntersect({x: -2, y: 2}, {x: 2, y: -2}));
-        // Mouse.start();
+        Mouse.start();
     });
 };
 
 const createCursorWindow = () => {
     cursorWindow = new BrowserWindow({
         // Hide for now
-        show: false,
+        show: true,
         // Make it 100% constant
         resizable: false,
         movable: false,
@@ -300,13 +297,27 @@ const Mouse = {
             mouseCoordinates[0] += distance[0];
             mouseCoordinates[1] += distance[1];
 
-            const translatedCoordinate = screenMap.translate({x: mouseCoordinates[0], y: mouseCoordinates[1]});
+            let translatedCoordinate = screenMap.translate({x: mouseCoordinates[0], y: mouseCoordinates[1]});
             const currentScreen = screenMap.getById(currentScreenId);
 
+            // This is to prevent it from going off-borders
             if (_.isUndefined(translatedCoordinate)) {
                 const translatedCoordinateBefore = screenMap.translate({x: mouseCoordinates[0] - distance[0], y: mouseCoordinates[1] - distance[1]});
                 const translatedCoordinateAfter = [translatedCoordinateBefore.pos.x + distance[0], translatedCoordinateBefore.pos.y + distance[1]];
-                
+
+                translatedCoordinateAfter[0] = translatedCoordinateAfter[0] <= 0 ? 0 : translatedCoordinateAfter[0];
+                translatedCoordinateAfter[1] = translatedCoordinateAfter[1] <= 0 ? 0 : translatedCoordinateAfter[1];
+
+                translatedCoordinateAfter[0] = translatedCoordinateAfter[0] >= currentScreen.width ? currentScreen.width : translatedCoordinateAfter[0];
+                translatedCoordinateAfter[1] = translatedCoordinateAfter[1] >= currentScreen.height ? currentScreen.height : translatedCoordinateAfter[1];
+
+                translatedCoordinate = {
+                    pos: {
+                        x: translatedCoordinateAfter[0],
+                        y: translatedCoordinateAfter[1]
+                    },
+                    id: currentScreenId
+                }
             }
 
             if (translatedCoordinate.id == "master") {
