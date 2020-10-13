@@ -6,9 +6,9 @@ Basically a better version of [this](https://www.microsoft.com/en-us/download/de
 
 ## Project Goals
 
-1. Connect multiple devices seamlessly with a 4x3 grid.
+1. Connect multiple devices seamlessly, **INFINITELY**.
 2. Connection with less than 20 milliseconds of delay.
-3. OS: Windows, MacOS (When i actually get a mac machine lol), Linux.
+3. OS: Windows, MacOS (When i actually get a mac lol), Linux (Maybe).
 
 ## Current Released Version:
 
