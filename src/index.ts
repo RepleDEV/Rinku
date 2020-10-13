@@ -303,6 +303,12 @@ const Mouse = {
             const translatedCoordinate = screenMap.translate({x: mouseCoordinates[0], y: mouseCoordinates[1]});
             const currentScreen = screenMap.getById(currentScreenId);
 
+            if (_.isUndefined(translatedCoordinate)) {
+                const translatedCoordinateBefore = screenMap.translate({x: mouseCoordinates[0] - distance[0], y: mouseCoordinates[1] - distance[1]});
+                const translatedCoordinateAfter = [translatedCoordinateBefore.pos.x + distance[0], translatedCoordinateBefore.pos.y + distance[1]];
+                
+            }
+
             if (translatedCoordinate.id == "master") {
                 Mouse.move(mouseCoordinates[0], mouseCoordinates[1]);
 
