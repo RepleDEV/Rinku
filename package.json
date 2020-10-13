@@ -1,7 +1,7 @@
 {
     "name": "rinku",
     "productName": "rinku",
-    "version": "1.0.0-prototype.11",
+    "version": "1.0.0-prototype.14",
     "description": "Rinku (link)",
     "main": "./dist/index.js",
     "scripts": {
@@ -13,7 +13,7 @@
         "build": "tsc",
         "watch": "tsc --watch",
         "test": "tsc -p ./tests && mocha ./tests/out/tests/index.js",
-        "prettify": "prettier --write .",
+        "prettier": "prettier --write .",
         "postinstall": "npm run build && npm run prettify",
         "prestart": "npm run build"
     },

@@ -1,3 +1,5 @@
+/* eslint @typescript-eslint/explicit-module-boundary-types: 0 */
+
 import * as net from "net";
 
 type EventTypes =
@@ -5,13 +7,19 @@ type EventTypes =
     | "client.disconnect"
     | "client.error"
     | "auth.reject"
-    | "message";
+    | "auth.accept"
+    | "message"
+    | "method";
+
+type MethodTypes = "mouse.move";
 
 interface ClientCallback {
     eventType: EventTypes;
     message?: any;
     reason?: string;
     error?: any;
+    method?: MethodTypes;
+    methodParams?: { [key: string]: any };
 }
 
 class Client {
@@ -52,18 +60,19 @@ class Client {
                     new TextDecoder().decode(new Uint8Array(data))
                 );
 
-                if (msg.type == "auth.reject") {
-                    if (msg.reason == "Invalid Password") {
+                switch (msg.type) {
+                    case "auth.reject":
+                        this.callback(msg);
+                        break;
+                    case "method":
                         this.callback({
-                            eventType: "auth.reject",
-                            reason: "Invalid Password",
+                            eventType: "method",
+                            method: msg.methodType,
+                            methodParams: msg.params,
                         });
-                    }
-                } else {
-                    this.callback({
-                        eventType: "message",
-                        message: msg.message,
-                    });
+                        break;
+                    default:
+                        break;
                 }
             });
 
@@ -88,14 +97,14 @@ class Client {
             });
         });
     }
-    disconnect() {
+    disconnect(): string {
         if (this.#hasConnected) return "Haven't connected to server yet!";
 
         this.#client.end();
 
         return "Disconnected";
     }
-    retryAuth(password: string) {
+    retryAuth(password: string): void {
         this.#client.write(
             JSON.stringify({
                 type: "auth",
@@ -103,7 +112,7 @@ class Client {
             })
         );
     }
-    sendMessage(message: any) {
+    sendMessage(message: any): string {
         if (this.#hasConnected) return "Haven't connected to server yet!";
 
         this.#client.write(

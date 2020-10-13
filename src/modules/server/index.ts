@@ -1,3 +1,5 @@
+/* eslint @typescript-eslint/explicit-module-boundary-types: 0 */
+
 import * as net from "net";
 
 import portchecker from "../portchecker";
@@ -9,7 +11,8 @@ type EventTypes =
     | "client.message"
     | "client.data"
     | "client.disconnect"
-    | "client.disconnect.force";
+    | "client.disconnect.force"
+    | "method";
 
 interface Sockets {
     [key: string]: Socket;

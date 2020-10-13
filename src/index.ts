@@ -6,6 +6,8 @@ import * as _ from "lodash";
 import Server = require("./modules/server");
 import Client = require("./modules/client/");
 
+import ScreenMap = require("./modules/screenmap");
+
 import * as winswitcher from "@repledev/rinku_winswitcher";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -53,9 +55,10 @@ const createMainWindow = () => {
         // Set domHasLoaded to true
         domHasLoaded = true;
 
-        setInterval(() => {
-            Cursor.update();
-        }, 5);
+        // screenMap.addScreen(1366, 768, {x: -1366, y: 0}, "a");
+        // screenMap.addScreen(1366, 768, {x: 1366, y: 0}, "b");
+        console.log(screenMap.calculateEdgeIntersect({x: -2, y: 2}, {x: 2, y: -2}));
+        // Mouse.start();
     });
 };
 
@@ -142,38 +145,21 @@ ipcMain.handle("mainWindow", async (e, ...args) => {
 
 ipcMain.handle("cursorWindow", async (e, ...args) => {});
 
-const Callbacks = {
-    server: function (event: { [key: string]: any }) {
-        const {
-            eventType,
-            port,
-            host,
-            password,
-            extraData,
-            clientId,
-            message,
-            data,
-        } = event;
-        switch (eventType) {
-            case "server.start":
-                sendMessageToMainWindow({
-                    type: "log",
-                    log: `Started server in port: ${port}; host: ${host}; password: ${password}.`,
-                });
-                extraData.width;
+const server = new Server(console.log);
+const client = new Client((e) => {
+    const { eventType, message, method, methodParams, error, reason } = e;
+
+    if (eventType == "method") {
+        switch (method) {
+            case "mouse.move":
+                Mouse.move(methodParams.pos.x, methodParams.pos.y);
                 break;
-            case "client.disconnect":
-                sendMessageToMainWindow({});
-                break;
+
             default:
                 break;
         }
-    },
-    client: function (event: { [key: string]: any }) {},
-};
-
-const server = new Server(Callbacks.server);
-const client = new Client(Callbacks.client);
+    }
+});
 
 type CurrentInstances = "Standby" | "Server" | "Client";
 
@@ -227,6 +213,9 @@ const ipcMethods = {
                     return "You can't be a server when you're a client!";
 
                 currentInstance = "Server";
+
+                Mouse.start();
+
                 return await ipcMethods.server.start(
                     extraArgs[0],
                     extraArgs[1],
@@ -288,49 +277,38 @@ const ipcMethods = {
 */
 const screenSize = robotjs.getScreenSize();
 
-let cursorCoord: [number, number] = [0, 0];
+let mouseCoordinates: [number, number];
 
-const screenMap = new ScreenMap(3, 2);
-screenMap.set(screenSize.width, screenSize.height, "master", 2, 1);
+let isOutside = false;
+let currentScreenId = "master";
 
-let onScreenEdge = false;
+const screenMap = new ScreenMap(screenSize.width, screenSize.height);
 
 const restingPlace = [screenSize.width / 2, screenSize.height * 0.05].map(
     Math.round
 );
 
-const Cursor = {
-    update: function (): void {
-        const { x: mouseX, y: mouseY } = robotjs.getMousePos();
+const Mouse = {
+    loop: undefined,
+    update(): void {
+        const mousePos = robotjs.getMousePos();
+        const { x: mouseX, y: mouseY } = mousePos;
 
-        if (onScreenEdge) {
-            // Distance from restingPlace
-            const distance = [
-                mouseX - restingPlace[0],
-                mouseY - restingPlace[1],
-            ];
+        if (isOutside) {
+            const distance = [mouseX - restingPlace[0], mouseY - restingPlace[1]];
 
-            cursorCoord[0] += distance[0];
-            cursorCoord[1] += distance[1];
+            mouseCoordinates[0] += distance[0];
+            mouseCoordinates[1] += distance[1];
 
-            cursorCoord[1] = cursorCoord[1] <= 0 ? 0 : cursorCoord[1];
-            cursorCoord[1] =
-                cursorCoord[1] >= screenSize.width
-                    ? screenSize.width
-                    : cursorCoord[1];
+            const translatedCoordinate = screenMap.translate({x: mouseCoordinates[0], y: mouseCoordinates[1]});
+            const currentScreen = screenMap.getById(currentScreenId);
 
-            if (cursorCoord[0] > 0) {
-                // if (screenMap.get(0, 1) !== null) {
-                // 	Cursor.move(cursorCoord[0], cursorCoord[1]);
+            if (translatedCoordinate.id == "master") {
+                Mouse.move(mouseCoordinates[0], mouseCoordinates[1]);
 
-                // 	onScreenEdge = false;
 
-                // 	return;
-                // }
-                Cursor.move(cursorCoord[0], cursorCoord[1]);
-
-                onScreenEdge = false;
-
+                isOutside = false;
+                
                 cursorWindow.blur();
                 cursorWindow.hide();
 
@@ -338,59 +316,156 @@ const Cursor = {
 
                 return;
             } else {
-                Cursor.reset();
+                if (translatedCoordinate.pos.x <= 0) {
+                    translatedCoordinate.pos.x = 0;
+                }
+
+                if (translatedCoordinate.pos.x >= currentScreen.width) {
+                    translatedCoordinate.pos.x = currentScreen.width;
+                }
+
+                if (translatedCoordinate.pos.y <= 0) {
+                    translatedCoordinate.pos.y = 0;
+                }
+
+                if (translatedCoordinate.pos.y >= currentScreen.height) {
+                    translatedCoordinate.pos.y = currentScreen.height;
+                }
+
+                Mouse.moveOnId(translatedCoordinate.id, translatedCoordinate.pos.x, translatedCoordinate.pos.y);
+
+                Mouse.reset();
             }
+
+            currentScreenId = translatedCoordinate.id;
         } else {
-            cursorCoord = [mouseX, mouseY];
+            mouseCoordinates = [mouseX, mouseY];
         }
 
-        if (Cursor.onScreenEdge("w", mouseX, mouseY) && !onScreenEdge) {
-            Cursor.reset();
+        const onScreenEdge = screenMap.onScreenEdge(mousePos);
 
-            onScreenEdge = true;
+        if (!_.isUndefined(onScreenEdge)) {
+            const coordToTranslate = mousePos;
+            if (onScreenEdge == "n") {
+                coordToTranslate.y -= 1;
+            } else if (onScreenEdge == "e") {
+                coordToTranslate.x += 1;
+            } else if (onScreenEdge == "w") {
+                coordToTranslate.x -= 1;
+            } else if (onScreenEdge == "s") {
+                coordToTranslate.y += 1;
+            }
 
-            winswitcher.storeActiveWindow();
+            const translatedCoordinate = screenMap.translate(coordToTranslate);
 
-            cursorWindow.show();
-            cursorWindow.focus();
+            if (translatedCoordinate.id != "master") {
+                mouseCoordinates[0] = coordToTranslate.x;
+                mouseCoordinates[1] = coordToTranslate.y;
+
+                Mouse.moveOnId(translatedCoordinate.id, translatedCoordinate.pos.x, translatedCoordinate.pos.y);
+
+                Mouse.reset();
+
+                isOutside = true;
+
+                winswitcher.storeActiveWindow();
+
+                cursorWindow.show();
+                cursorWindow.focus();
+            }
         }
 
-        // // If there's a screen on the left
-        // if (screenMap.get(0, 1) !== null) {
-        // 	// Check if it's on edge
-        // 	if (Cursor.onScreenEdge("w", mouseX, mouseY) && !onScreenEdge) {
-        // 		Cursor.reset();
+        // // Init
+        // if (_.isUndefined(mouseCoordinates)) {
+        //     mouseCoordinates = [mouseX, mouseY];
+        // } else {
+        //     if (isOutside) {
+        //         // console.log(restingPlace[0] - mouseX);
+        //         mouseCoordinates[0] += mouseX - restingPlace[0];
+        //         mouseCoordinates[1] += mouseY - restingPlace[1];
+        //     } else {
+        //         mouseCoordinates[0] = mouseX;
+        //         mouseCoordinates[1] = mouseY;
+        //     }
+        // }
 
-        // 		onScreenEdge = true;
-        // 	}
-        // } else if (screenMap.get(2, 1) !== null) {
-        // 	if (Cursor.onScreenEdge("e", mouseX, mouseY) && !onScreenEdge) {
-        // 		Cursor.reset();
+        // const onScreenEdge = screenMap.onScreenEdge({x: mouseCoordinates[0], y: mouseCoordinates[1]});
 
-        // 		onScreenEdge = true;
-        // 	}
+        // const coordToTranslate = {x: mouseCoordinates[0], y: mouseCoordinates[1]};
+        // switch (onScreenEdge) {
+        //     case "n":
+        //         coordToTranslate.y -= 1;
+        //         break;
+        //     case "e":
+        //         coordToTranslate.x += 1;
+        //         break;
+        //     case "w":
+        //         coordToTranslate.x -= 1;
+        //         break;
+        //     case "s":
+        //         coordToTranslate.y += 1;
+        //         break;
+        // }
+
+        // const translatedCursorPosition = screenMap.translate(coordToTranslate);
+
+        // if (!_.isUndefined(translatedCursorPosition)) {
+            
+        //     if (translatedCursorPosition.id == "master") {
+        //         if (isOutside) {
+        //             Mouse.move(
+        //                 translatedCursorPosition.pos.x,
+        //                 translatedCursorPosition.pos.y
+        //             );
+    
+        //             winswitcher.activateStoredWindow();
+        //         }
+                
+        //         isOutside = false;
+        //     } else {
+        //         server.sendMessageToClient(translatedCursorPosition.id, {
+        //             method: "mouse.move",
+        //             params: {
+        //                 pos: translatedCursorPosition.pos,
+        //             },
+        //         });
+
+        //         winswitcher.storeActiveWindow();
+
+        //         Mouse.reset();
+
+        //         isOutside = true;
+        //     }
+
+        //     screenMap.setActive(translatedCursorPosition.id);
+        // } else {
+        //     console.log("UN");
         // }
     },
-    reset: function (): void {
+    reset(): void {
         robotjs.moveMouse(restingPlace[0], restingPlace[1]);
     },
-    onScreenEdge: function (
-        edge: "n" | "e" | "w" | "s",
-        mouseX: number,
-        mouseY: number
-    ) {
-        switch (edge) {
-            case "n":
-                return mouseY <= 0;
-            case "e":
-                return mouseX >= screenSize.width;
-            case "w":
-                return mouseX <= 0;
-            case "s":
-                return mouseY >= screenSize.height;
-        }
-    },
-    move: function (mouseX: number, mouseY: number) {
+    move(mouseX: number, mouseY: number): void {
         robotjs.moveMouse(mouseX, mouseY);
     },
+    start(): void {
+        if (_.isUndefined(Mouse.loop)) {
+            Mouse.loop = setInterval(() => {
+                Mouse.update();
+            }, 5);
+        }
+    },
+    stop(): void {
+        if (_.isUndefined(Mouse.loop)) {
+            clearInterval(Mouse.loop);
+
+            mouseCoordinates = undefined;
+        }
+    },
+    moveOnId(id: string, mouseX: number, mouseY: number): void {
+        server.sendMessageToClient(id, { type: "method", methodType: "mouse.move", params: {
+            x: mouseX,
+            y: mouseY
+        }});
+    }
 };

@@ -1,18 +1,27 @@
 import * as _ from "lodash";
 
+type Edge = "n" | "e" | "w" | "s";
+
 interface CoordinateObject {
     x: number;
     y: number;
 }
 
 interface ScreenCoordinateObject {
-    width: number;
-    height: number;
-    id: string;
+    width?: number;
+    height?: number;
+    id?: string;
     pos: CoordinateObject;
+    active?: boolean;
 }
 
-let screenCoords: Array<ScreenCoordinateObject> = [];
+interface ScreenEdgeCoordinateObject { 
+    edge: Edge,
+    pos?: CoordinateObject,
+    id?: string
+}
+
+const map: Array<ScreenCoordinateObject> = [];
 
 class ScreenMap {
     /**
@@ -21,7 +30,7 @@ class ScreenMap {
      * @param screenHeight Master screen's height.
      */
     constructor(screenWidth: number, screenHeight: number) {
-        screenCoords.push({
+        map.push({
             width: screenWidth,
             height: screenHeight,
             id: "master",
@@ -29,29 +38,145 @@ class ScreenMap {
                 x: 0,
                 y: 0,
             },
+            active: true,
         });
     }
     addScreen(
         screenWidth: number,
         screenHeight: number,
-        xPos: number,
-        yPos: number,
+        pos: CoordinateObject,
         id: string
     ): boolean {
-        if(!ScreenMap.checkScreen(screenWidth, screenHeight, {x: xPos, y: yPos})) {
+        if (!ScreenMap.checkScreen(screenWidth, screenHeight, pos)) {
             return false;
         }
-        screenCoords.push({
+
+        for (const { id: idx } of map) {
+            if (idx == id) {
+                return false;
+            }
+        }
+
+        map.push({
             width: screenWidth,
             height: screenHeight,
             id: id,
-            pos: {
-                x: xPos,
-                y: yPos,
-            },
+            pos: pos,
+            active: false,
         });
 
         return true;
+    }
+    /**
+     * Translates mouse position.
+     * @param mousePos Mouse Position
+     *
+     * Returns undefined if mousePos is out of bounds.
+     */
+    translate(mousePos: CoordinateObject): ScreenCoordinateObject {
+        for (const { width, height, pos, id, active } of map) {
+            if (
+                (pos.x <= mousePos.x && mousePos.x < pos.x + width) &&
+                (pos.y <= mousePos.y && mousePos.y < pos.y + height)
+            ) {
+                return {
+                    pos: {
+                        x: mousePos.x - pos.x,
+                        y: mousePos.y - pos.y
+                    },
+                    id: id
+                }
+            }
+        }
+    }
+    calculateEdgeIntersect(pos1: CoordinateObject, pos2: CoordinateObject): ScreenEdgeCoordinateObject {
+        if (_.isEqual(pos1, pos2)) {
+            return;
+        }        
+        
+        let closestDistanceX: number = Number.MAX_VALUE;
+        let closestDistanceY: number = Number.MAX_VALUE;
+        let closestDistanceIdX: string;
+        let closestDistanceIdY: string;
+
+        for (const { width, height, pos, id } of map) {
+            const xEdges = [pos.x, pos.x + width];
+            const yEdges = [pos.y, pos.y + height];
+            for (const edge of xEdges) {
+                const isInRange = _.inRange(edge, pos1.x, pos2.x);
+                const distance = Math.abs(edge - pos1.x);
+                if (isInRange && distance < closestDistanceX) {
+                    closestDistanceX = distance;
+                    closestDistanceIdX = id;
+                }
+            }
+
+            for (const edge of yEdges) {
+                const isInRange = _.inRange(edge, pos1.y, pos2.y);
+                const distance = Math.abs(edge - pos1.y);
+                if (isInRange && distance < closestDistanceY) {
+                    closestDistanceY = distance;
+                    closestDistanceIdY = id;
+                }
+            }
+        }
+
+        console.log(
+            closestDistanceX, closestDistanceIdX,
+            closestDistanceY, closestDistanceIdY
+        );
+        return;
+    }
+    setActive(id: string): boolean {
+        // First, make it true.
+        for (let i = 0;i < map.length;i++) {
+            const { id: idx, active } = map[i];
+            if (active && idx != id) {
+                map[i].active = false;
+            }
+            if (id == idx) {
+                if (!active) {
+                    map[i].active = true;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    getActive(): ScreenCoordinateObject {
+        for (const screen of map) {
+            const { active } = screen;
+            if (active) {
+                return screen;
+            }
+        }
+    }
+    onScreenEdge({ x: mouseX, y: mouseY }: CoordinateObject): "n" | "e" | "w" | "s" {
+        const screen = this.getById("master");
+        if (mouseY <= 0) 
+            return "n";
+        else if (mouseX >= screen.width - 1) 
+            return "e";
+        else if (mouseX <= 0)
+            return "w";
+        else if (mouseY >= screen.height - 1)
+            return "s";
+    }
+    getCurrentActiveScreen(): ScreenCoordinateObject {
+        for (const screen of map) {
+            const { active } = screen;
+            if (active) {
+                return screen;
+            }
+        }
+    }
+    getById(id: string): ScreenCoordinateObject {
+        for (const screen of map) {
+            const { id: idx } = screen;
+            if (idx == id) {
+                return screen;
+            }
+        }
     }
     static checkScreen(
         screenWidth: number,
@@ -61,13 +186,13 @@ class ScreenMap {
         const pillars: Array<[number, number]> = [];
         const rows: Array<[number, number]> = [];
 
-        for (let i = 0; i < screenCoords.length; i++) {
-            let { width, height, pos } = screenCoords[0];
-            let { x, y } = pos;
+        for (let i = 0; i < map.length; i++) {
+            const { width, height, pos } = map[0];
+            const { x, y } = pos;
             pillars.push([x, x + width]);
             rows.push([y, y + height]);
 
-            let hasOverlap = this.isOverlap(
+            const hasOverlap = this.isOverlap(
                 coord,
                 { x: coord.x + screenWidth, y: coord.y + screenHeight },
                 pos,
@@ -78,9 +203,9 @@ class ScreenMap {
             }
         }
 
-        for (let i = 0; i < screenCoords.length; i++) {
-            let pillar = pillars[i];
-            let row = rows[i];
+        for (let i = 0; i < map.length; i++) {
+            const pillar = pillars[i];
+            const row = rows[i];
             if (coord.x + screenWidth == pillar[0] || coord.x == pillar[1]) {
                 if (
                     (coord.y >= row[0] && coord.y < row[1]) ||
@@ -143,5 +268,4 @@ class ScreenMap {
     }
 }
 
-const screemap = new ScreenMap(1366, 768);
-console.log(ScreenMap.checkScreen(1366, 736, { x: -1366, y: 0 }));
+export = ScreenMap;
