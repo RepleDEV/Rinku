@@ -2,6 +2,8 @@
 
 import * as net from "net";
 
+import { ScreenArguments, Message, MethodTypes, MethodParameters } from "../server";
+
 type EventTypes =
     | "client.connect"
     | "client.disconnect"
@@ -11,15 +13,13 @@ type EventTypes =
     | "message"
     | "method";
 
-type MethodTypes = "mouse.move";
-
 interface ClientCallback {
     eventType: EventTypes;
     message?: any;
     reason?: string;
     error?: any;
     method?: MethodTypes;
-    methodParams?: { [key: string]: any };
+    methodParams?: MethodParameters;
 }
 
 class Client {
@@ -35,8 +35,8 @@ class Client {
     connect(
         port: number,
         host: string = "localhost",
-        password?: string | undefined,
-        extraData?: any
+        password: string | undefined,
+        screenArgs: ScreenArguments
     ): Promise<string> {
         return new Promise((resolve) => {
             this.#client.connect(port, host, () => {
@@ -50,25 +50,29 @@ class Client {
                     JSON.stringify({
                         type: "auth",
                         password: password,
-                        extraData: extraData,
+                        screenArgs: screenArgs,
                     })
                 );
+
+                this.#hasConnected = true;
             });
 
             this.#client.on("data", (data) => {
-                const msg = JSON.parse(
+                const msg: Message = JSON.parse(
                     new TextDecoder().decode(new Uint8Array(data))
                 );
 
                 switch (msg.type) {
                     case "auth.reject":
-                        this.callback(msg);
+                        this.callback({
+                            eventType: "auth.reject"
+                        });
                         break;
                     case "method":
                         this.callback({
                             eventType: "method",
                             method: msg.methodType,
-                            methodParams: msg.params,
+                            methodParams: msg.methodParams,
                         });
                         break;
                     default:
@@ -94,7 +98,18 @@ class Client {
                     eventType: "client.disconnect",
                     reason: "Ended connection by server / client",
                 });
+
+                this.#hasConnected = false;
             });
+
+            this.#client.on("close", () => {
+                this.callback({
+                    eventType: "client.disconnect",
+                    reason: "Closed connection by server / client"
+                });
+
+                this.#hasConnected = false;
+            })
         });
     }
     disconnect(): string {
@@ -126,4 +141,4 @@ class Client {
     }
 }
 
-export = Client;
+export { Client };

@@ -1,7 +1,5 @@
 import * as _ from "lodash";
 
-type Edge = "n" | "e" | "w" | "s";
-
 interface CoordinateObject {
     x: number;
     y: number;
@@ -13,12 +11,6 @@ interface ScreenCoordinateObject {
     id?: string;
     pos: CoordinateObject;
     active?: boolean;
-}
-
-interface ScreenEdgeCoordinateObject { 
-    edge: Edge,
-    pos?: CoordinateObject,
-    id?: string
 }
 
 const map: Array<ScreenCoordinateObject> = [];
@@ -76,22 +68,24 @@ class ScreenMap {
     translate(mousePos: CoordinateObject): ScreenCoordinateObject {
         for (const { width, height, pos, id, active } of map) {
             if (
-                (pos.x <= mousePos.x && mousePos.x < pos.x + width) &&
-                (pos.y <= mousePos.y && mousePos.y < pos.y + height)
+                pos.x <= mousePos.x &&
+                mousePos.x < pos.x + width &&
+                pos.y <= mousePos.y &&
+                mousePos.y < pos.y + height
             ) {
                 return {
                     pos: {
                         x: mousePos.x - pos.x,
-                        y: mousePos.y - pos.y
+                        y: mousePos.y - pos.y,
                     },
-                    id: id
-                }
+                    id: id,
+                };
             }
         }
     }
     setActive(id: string): boolean {
         // First, make it true.
-        for (let i = 0;i < map.length;i++) {
+        for (let i = 0; i < map.length; i++) {
             const { id: idx, active } = map[i];
             if (active && idx != id) {
                 map[i].active = false;
@@ -113,16 +107,15 @@ class ScreenMap {
             }
         }
     }
-    onScreenEdge({ x: mouseX, y: mouseY }: CoordinateObject, id: string = "master"): "n" | "e" | "w" | "s" {
+    onScreenEdge(
+        { x: mouseX, y: mouseY }: CoordinateObject,
+        id: string = "master"
+    ): "n" | "e" | "w" | "s" {
         const screen = this.getById(id);
-        if (mouseY <= 0) 
-            return "n";
-        else if (mouseX >= screen.width - 1) 
-            return "e";
-        else if (mouseX <= 0)
-            return "w";
-        else if (mouseY >= screen.height - 1)
-            return "s";
+        if (mouseY <= 0) return "n";
+        else if (mouseX >= screen.width - 1) return "e";
+        else if (mouseX <= 0) return "w";
+        else if (mouseY >= screen.height - 1) return "s";
     }
     getCurrentActiveScreen(): ScreenCoordinateObject {
         for (const screen of map) {
@@ -137,6 +130,14 @@ class ScreenMap {
             const { id: idx } = screen;
             if (idx == id) {
                 return screen;
+            }
+        }
+    }
+    removeById(id: string): ScreenCoordinateObject {
+        for (let i = 0;i < map.length;i++) {
+            const { id: _id } = map[i];
+            if (id == _id) {
+                return map.splice(i, 1)[0];
             }
         }
     }
@@ -230,4 +231,4 @@ class ScreenMap {
     }
 }
 
-export = ScreenMap;
+export { ScreenMap, ScreenCoordinateObject, CoordinateObject } ;

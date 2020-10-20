@@ -1,5 +1,7 @@
 /* eslint @typescript-eslint/explicit-module-boundary-types: 0 */
 
+
+
 import * as net from "net";
 
 import portchecker from "../portchecker";
@@ -23,15 +25,43 @@ interface Socket {
     authorized: boolean;
 }
 
+interface ScreenArguments {
+    screen: {
+        width: number;
+        height: number;
+    };
+    pos: {
+        x: number;
+        y: number;
+    };
+}
+
 interface ServerCallback {
     eventType: EventTypes;
     port?: number;
     host?: string;
     password?: PasswordTypes;
-    extraData?: any;
+    screenArgs?: ScreenArguments;
     clientId?: string;
     message?: any;
     data?: any;
+}
+
+type MessageTypes = "message" | "auth.reject" | "method";
+type MethodTypes = "mouse.move";
+
+interface MethodParameters {
+    pos?: {
+        x: number;
+        y: number
+    };
+}
+
+interface Message {
+    type: MessageTypes;
+    message?: any;
+    methodType?: MethodTypes;
+    methodParams?: MethodParameters;
 }
 
 class Server {
@@ -91,21 +121,19 @@ class Server {
 
                         this.callback({
                             eventType: "client.connect",
-                            extraData: msg.extraData,
+                            screenArgs: msg.extraData,
                         });
 
                         this.connectedUsersTotal++;
                     } else {
-                        if (msg.password === undefined) {
-                            socket.write("Password unprovided");
-                        } else if (msg.password === this.#setPassword) {
+                        if (msg.password === this.#setPassword) {
                             this.#sockets[
                                 `${socket.remoteAddress}:${socket.remotePort}`
                             ].authorized = true;
 
                             this.callback({
                                 eventType: "client.connect",
-                                extraData: msg.extraData,
+                                screenArgs: msg.extraData,
                             });
 
                             this.connectedUsersTotal++;
@@ -138,21 +166,11 @@ class Server {
             });
 
             socket.on("close", () => {
-                for (const addr in this.#sockets) {
-                    const { socket: sock } = this.#sockets[addr];
+                this.disconnectClient(socket);
+            });
 
-                    if (
-                        sock.remoteAddress === socket.remoteAddress &&
-                        sock.remotePort === socket.remotePort
-                    ) {
-                        this.callback({
-                            eventType: "client.disconnect",
-                            clientId: this.#sockets[addr].id,
-                        });
-
-                        delete this.#sockets[addr];
-                    }
-                }
+            socket.on("end", () => {
+                this.disconnectClient(socket);
             });
 
             socket.on("error", (err) => {
@@ -187,7 +205,24 @@ class Server {
 
         return "Stopped server!";
     }
-    sendMessageToAll(message: any): string {
+    disconnectClient(socket: net.Socket) {
+        for (const addr in this.#sockets) {
+            const { socket: sock } = this.#sockets[addr];
+
+            if (
+                sock.remoteAddress === socket.remoteAddress &&
+                sock.remotePort === socket.remotePort
+            ) {
+                this.callback({
+                    eventType: "client.disconnect",
+                    clientId: this.#sockets[addr].id,
+                });
+
+                delete this.#sockets[addr];
+            }
+        }
+    }
+    sendMessageToAll(message: Message): string {
         if (!this.#hasStartedServer) return "Server hasn't started yet!";
 
         for (const addr in this.#sockets) {
@@ -203,8 +238,8 @@ class Server {
 
         return "Sent message!";
     }
-    sendMessageToClient(clientId: string, message: any): string {
-        if (!this.#hasStartedServer) return "Server hasn't started yet!";
+    sendMessageToClient(clientId: string, message: Message): string {
+        if (!this.#hasStartedServer)return "Server hasn't started yet!";
 
         for (const addr in this.#sockets) {
             const { socket, id } = this.#sockets[addr];
@@ -220,6 +255,23 @@ class Server {
         }
         return "No clients found attached with the ID provided.";
     }
+    sendMethodToClient(clientId: string, methodType: MethodTypes, methodParams: MethodParameters): string {
+        if (!this.#hasStartedServer)return "Server hasn't started yet!";
+
+        for (const addr in this.#sockets) {
+            const { socket, id } = this.#sockets[addr];
+
+            if (id == clientId) {
+                socket.write(
+                    JSON.stringify({
+                        type: "method",
+                        methodType: methodType,
+                        methodParams: methodParams
+                    })
+                );
+            }
+        }
+    }
 }
 
-export = Server;
+export { Server, ScreenArguments, Message, MethodTypes, MethodParameters };
