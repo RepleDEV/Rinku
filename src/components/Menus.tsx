@@ -14,7 +14,11 @@ class Menu extends React.Component<{menu: MenuTypes}> {
                         <button onClick={() => {
                             console.log(startServer());
                         }}>Server</button>
-                        <button>Client</button>
+                        <br />
+                        <input id="host_client"/>
+                        <button onClick={() => {
+                            sendMethod("connect to server")
+                        }}>Client</button>
                     </div>
                 )
             default:

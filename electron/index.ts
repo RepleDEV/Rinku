@@ -24,7 +24,7 @@ let domHasLoaded = false;
 let mainWindow: BrowserWindow | null;
 
 // Cursor Window
-let cursorWindow: BrowserWindow;
+let cursorWindow: BrowserWindow | null;
 
 const createMainWindow = () => {
     // Create the browser window.
@@ -66,14 +66,12 @@ const createMainWindow = () => {
     mainWindow.webContents.on("dom-ready", () => {
         // Set domHasLoaded to true
         domHasLoaded = true;
-
-        screenMap.addScreen(1366, 768, { x: 1366, y: 0 }, "gh");
-
-        Mouse.start();
     });
 
     mainWindow.on("closed", () => {
         mainWindow = null;
+
+        cursorWindow.close();
     });
 };
 
@@ -104,6 +102,10 @@ const createCursorWindow = () => {
     cursorWindow.maximize();
 
     cursorWindow.loadFile(path.join(__dirname, "../res/worker/index.html"));
+
+    cursorWindow.on("closed", () => {
+        cursorWindow = null;
+    });
 };
 
 // This method will be called when Electron has finished
@@ -166,16 +168,9 @@ ipcMain.handle("mainWindow", async (e, ...args) => {
 ipcMain.handle("cursorWindow", async (e, ...args) => {});
 
 const server = new Server((e) => {
+    console.log(e);
     const { eventType, screenArgs, message, clientId } = e;
     switch (eventType) {
-        case "client.connect":
-            screenMap.addScreen(
-                screenArgs.screen.width,
-                screenArgs.screen.height,
-                screenArgs.pos,
-                clientId
-            );
-            break;
         case "client.disconnect":
             screenMap.removeById(clientId);
             break;
@@ -187,14 +182,17 @@ const server = new Server((e) => {
     }
 });
 const client = new Client((e) => {
+    console.log(e);
     const { eventType, message, method, methodParams, error, reason } = e;
 
     if (eventType == "method") {
         switch (method) {
             case "mouse.move":
-                Mouse.move(methodParams.pos.x, methodParams.pos.y);
+                // Mouse.move(methodParams.pos.x, methodParams.pos.y);
                 break;
-
+            case "screenmap.sync":
+                screenMap.setScreenMap(methodParams.screenMap);
+                break;
             default:
                 break;
         }
@@ -259,10 +257,12 @@ class IpcMethods {
             case "start server":
                 if (currentInstance == "Client")
                     return "You can't be a server when you're a client!";
+                else if (currentInstance == "Server")
+                    return "Server already started!";
 
                 currentInstance = "Server";
 
-                Mouse.start();
+                // Mouse.start();
 
                 return await this.server.start(
                     methodArgs.port,
@@ -289,8 +289,7 @@ class IpcMethods {
                     methodArgs.host,
                     methodArgs.password,
                     {
-                        screen: robotjs.getScreenSize(),
-                        pos: methodArgs.screenPos
+                        screen: robotjs.getScreenSize()
                     }
                 );
             case "disconnect from server":
@@ -303,9 +302,6 @@ class IpcMethods {
                     return "You can't be a client if you're a server!";
 
                 return client.retryAuth(methodArgs.password);
-            case "tests":
-                cursorWindow.show();
-                cursorWindow.focus();
                 return;
             default:
                 return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";

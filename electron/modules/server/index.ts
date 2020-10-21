@@ -3,6 +3,7 @@
 import * as net from "net";
 
 import portchecker from "../portchecker";
+import { ScreenMapArray } from "../screenmap/";
 
 type PasswordTypes = string | number | undefined;
 type EventTypes =
@@ -28,10 +29,6 @@ interface ScreenArguments {
         width: number;
         height: number;
     };
-    pos: {
-        x: number;
-        y: number;
-    };
 }
 
 interface ServerCallback {
@@ -45,10 +42,11 @@ interface ServerCallback {
     data?: any;
 }
 
-type MessageTypes = "message" | "auth.reject" | "method";
-type MethodTypes = "mouse.move";
+type MessageTypes = "message" | "auth.reject" | "auth.accept" | "method";
+type MethodTypes = "mouse.move" | "screenmap.sync";
 
 interface MethodParameters {
+    screenMap?: ScreenMapArray;
     pos?: {
         x: number;
         y: number;
@@ -64,7 +62,7 @@ interface Message {
 
 const server = net.createServer();
 
-let sockets: Sockets = {};
+const sockets: Sockets = {};
 
 let setPassword: PasswordTypes;
 
@@ -134,6 +132,10 @@ class Server {
                                 eventType: "client.connect",
                                 screenArgs: msg.extraData,
                             });
+
+                            socket.write(JSON.stringify({
+                                type: "auth.accept"
+                            }));
 
                             this.connectedUsersTotal++;
                         } else {

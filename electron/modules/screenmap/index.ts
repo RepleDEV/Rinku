@@ -13,7 +13,9 @@ interface ScreenCoordinateObject {
     active?: boolean;
 }
 
-const map: Array<ScreenCoordinateObject> = [];
+type ScreenMapArray = Array<ScreenCoordinateObject>;
+
+let map: ScreenMapArray = [];
 
 class ScreenMap {
     /**
@@ -192,6 +194,9 @@ class ScreenMap {
             }
         }
     }
+    setScreenMap(screenMap: ScreenMapArray): void {
+        map = screenMap;
+    }
     /**
      * Checks if two rectangles are overlapping
      * @param l1 NW Corner of first rectangle
@@ -231,4 +236,4 @@ class ScreenMap {
     }
 }
 
-export { ScreenMap, ScreenCoordinateObject, CoordinateObject };
+export { ScreenMap, ScreenCoordinateObject, CoordinateObject, ScreenMapArray };

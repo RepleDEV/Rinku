@@ -93,3 +93,6 @@ dist/
 
 # Temp
 temp/
+
+# Electron-builder output directory
+out/

@@ -74,6 +74,11 @@ class Client {
                             eventType: "auth.reject",
                         });
                         break;
+                    case "auth.accept":
+                        this.callback({
+                            eventType: "auth.accept"
+                        });
+                        break;
                     case "method":
                         this.callback({
                             eventType: "method",
