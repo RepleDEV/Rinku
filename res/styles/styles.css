@@ -1,0 +1,16 @@
+/* https://fonts.google.com/specimen/Heebo */
+@import url('https://fonts.googleapis.com/css2?family=Heebo&display=swap');
+
+* {
+    text-align: center;
+
+    font-family: 'Heebo', sans-serif;
+}
+
+body {
+    background-color: white;
+}
+
+button {
+    margin: 0.2rem;
+}
