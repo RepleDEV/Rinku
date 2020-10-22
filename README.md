@@ -10,9 +10,14 @@ Basically a better version of [this](https://www.microsoft.com/en-us/download/de
 2. Connection with less than 20 milliseconds of delay.
 3. OS: Windows, MacOS (When i actually get a mac lol), Linux (Maybe).
 
+## Tasks:
+- Reduce delay
+- Maximize polling rate (Try to **not** lose polling rate)
+
 ## Current Released Version:
 
-PROTOTYPE ¯\\\_(ツ)\_/¯
+Finished prototype: done.
+Current stage: Pre-alpha testing and refining
 
 ## Setup
 
