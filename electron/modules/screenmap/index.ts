@@ -68,7 +68,7 @@ class ScreenMap {
      * Returns undefined if mousePos is out of bounds.
      */
     translate(mousePos: CoordinateObject): ScreenCoordinateObject {
-        for (const { width, height, pos, id, active } of map) {
+        for (const { width, height, pos, id } of map) {
             if (
                 pos.x <= mousePos.x &&
                 mousePos.x < pos.x + width &&

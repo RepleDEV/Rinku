@@ -4,6 +4,7 @@ import * as robotjs from "robotjs";
 import * as _ from "lodash";
 import * as url from 'url';
 import installExtension, { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } from 'electron-devtools-installer';
+import { performance } from "perf_hooks";
 
 import { Server } from "./modules/server/";
 import { Client } from "./modules/client/";
@@ -66,6 +67,10 @@ const createMainWindow = () => {
     mainWindow.webContents.on("dom-ready", () => {
         // Set domHasLoaded to true
         domHasLoaded = true;
+
+        screenMap.addScreen(1366, 768, {x: 1366, y: 0}, "test");
+
+        Mouse.start();
     });
 
     mainWindow.on("closed", () => {
@@ -366,7 +371,6 @@ const restingPlace = [screenSize.width / 2, screenSize.height * 0.4].map(
 class Mouse {
     static loop: NodeJS.Timeout;
     static update(): void {
-        
         const mousePos = robotjs.getMousePos();
         const { x: mouseX, y: mouseY } = mousePos;
 
@@ -383,10 +387,11 @@ class Mouse {
                 x: mouseCoordinates[0],
                 y: mouseCoordinates[1],
             });
-            const currentScreen = screenMap.getById(currentScreenId);
 
             // This is to prevent it from going off-borders
             if (_.isUndefined(translatedCoordinate)) {
+                const currentScreen = screenMap.getById(currentScreenId);
+
                 mouseCoordinates[0] -= distance[0];
                 mouseCoordinates[1] -= distance[1];
 
@@ -395,7 +400,7 @@ class Mouse {
                     y: mouseCoordinates[1],
                 });
 
-                const translatedCoordinateAfter: [number, number] = [
+                const translatedCoordinateAfter = [
                     translatedCoordinateBefore.pos.x + distance[0],
                     translatedCoordinateBefore.pos.y + distance[1],
                 ];
