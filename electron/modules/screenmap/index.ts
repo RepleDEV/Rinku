@@ -197,6 +197,9 @@ class ScreenMap {
     setScreenMap(screenMap: ScreenMapArray): void {
         map = screenMap;
     }
+    getScreenMap(): ScreenMapArray {
+        return map;
+    }
     /**
      * Checks if two rectangles are overlapping
      * @param l1 NW Corner of first rectangle

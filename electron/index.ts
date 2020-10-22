@@ -168,34 +168,76 @@ ipcMain.handle("mainWindow", async (e, ...args) => {
 ipcMain.handle("cursorWindow", async (e, ...args) => {});
 
 const server = new Server((e) => {
-    console.log(e);
-    const { eventType, screenArgs, message, clientId } = e;
+    sendMessageToMainWindow(e);
+    const { eventType, screenArgs, methodType, methodParams, clientId } = e;
     switch (eventType) {
+        // FIX: Removing screen from map after client disconnects. :/
         case "client.disconnect":
             screenMap.removeById(clientId);
             break;
         case "client.disconnect.force":
             screenMap.removeById(clientId);
             break;
+        case "client.connect":
+            server.sendMethodToClient(clientId, "screenmap.sync", {screenMap: screenMap.getScreenMap()});
+            pendingScreens.push({...screenArgs.screen, id: clientId});
+            break;
+        case "method":
+            switch (methodType) {
+                case "setscreen":
+                    for (let i = 0;i < pendingScreens.length;++i) {
+                        const { width, height, id } = pendingScreens[i];
+                        if (id === clientId) {
+                            screenMap.addScreen(width, height, methodParams.pos, id);
+                            pendingScreens.splice(i, 1);
+                            break;
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case "server.start":
+            Mouse.start();
+            break;
+        case "server.stop":
+            Mouse.stop();
+            break;
         default:
             break;
     }
 });
 const client = new Client((e) => {
-    console.log(e);
-    const { eventType, message, method, methodParams, error, reason } = e;
+    sendMessageToMainWindow(e);
+    const { eventType, method, methodParams, error, reason } = e;
 
-    if (eventType == "method") {
-        switch (method) {
-            case "mouse.move":
-                // Mouse.move(methodParams.pos.x, methodParams.pos.y);
-                break;
-            case "screenmap.sync":
-                screenMap.setScreenMap(methodParams.screenMap);
-                break;
-            default:
-                break;
-        }
+    switch (eventType) {
+        case "auth.accept":
+            sendMessageToMainWindow("auth.accept");
+            client.sendMethod("setscreen", {
+                pos: {
+                    x: 1366,
+                    y: 0
+                }
+            });
+            break;
+        case "method":
+            switch (method) {
+                case "mouse.move":
+                    sendMessageToMainWindow("movemouse");
+                    Mouse.move(methodParams.pos.x, methodParams.pos.y);
+                    break;
+                case "screenmap.sync":
+                    sendMessageToMainWindow("screenmapsync")
+                    screenMap.setScreenMap(methodParams.screenMap);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
     }
 });
 
@@ -222,10 +264,7 @@ class IpcMethods {
         },
         stop: function () {
             return server.stop();
-        },
-        sendMessage(message: any) {
-            return server.sendMessageToAll(message);
-        },
+        }
     };
     static client = {
         connect: async function (
@@ -238,9 +277,6 @@ class IpcMethods {
         },
         disconnect: function () {
             return client.disconnect();
-        },
-        sendMessage(message: any) {
-            return client.sendMessage(message);
         },
         retryAuth(password: string) {
             return client.retryAuth(password);
@@ -262,7 +298,7 @@ class IpcMethods {
 
                 currentInstance = "Server";
 
-                // Mouse.start();
+                Mouse.start();
 
                 return await this.server.start(
                     methodArgs.port,
@@ -302,7 +338,6 @@ class IpcMethods {
                     return "You can't be a client if you're a server!";
 
                 return client.retryAuth(methodArgs.password);
-                return;
             default:
                 return "Unknown Method. Better luck next time ¯\\_(ツ)_/¯";
         }
@@ -313,6 +348,8 @@ class IpcMethods {
 	2 ==> Main ROBOTJS functions
 
 */
+let pendingScreens: Array<{width: number, height: number, id: string}> = []; // eslint-disable-line
+
 const screenSize = robotjs.getScreenSize();
 
 let mouseCoordinates: [number, number];
@@ -322,13 +359,14 @@ let currentScreenId = "master";
 
 const screenMap = new ScreenMap(screenSize.width, screenSize.height);
 
-const restingPlace = [screenSize.width / 2, screenSize.height * 0.05].map(
+const restingPlace = [screenSize.width / 2, screenSize.height * 0.4].map(
     Math.round
 );
 
 class Mouse {
     static loop: NodeJS.Timeout;
     static update(): void {
+        
         const mousePos = robotjs.getMousePos();
         const { x: mouseX, y: mouseY } = mousePos;
 
@@ -501,7 +539,7 @@ class Mouse {
     static move(mouseX: number, mouseY: number): void {
         robotjs.moveMouse(mouseX, mouseY);
     }
-    static start(delay = 5): void {
+    static start(delay = 2): void {
         if (_.isUndefined(Mouse.loop)) {
             this.loop = setInterval(() => {
                 this.update();

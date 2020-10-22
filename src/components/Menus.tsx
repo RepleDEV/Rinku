@@ -1,4 +1,5 @@
 import React from "react";
+import $ from "jquery";
 
 import { sendMethod, startServer } from "../TS/ipc";
 
@@ -11,13 +12,24 @@ class Menu extends React.Component<{menu: MenuTypes}> {
                 return (
                     <div className="menu">
                         <h1>Rinku</h1>
+                        <input id="host_server"/>
                         <button onClick={() => {
-                            console.log(startServer());
+                            const host =  $("#host_server").val().toString();
+                            if (!host.length) {
+                                return console.log("pls enter value lolol");
+                            }
+                            console.log(startServer(host));
                         }}>Server</button>
                         <br />
                         <input id="host_client"/>
                         <button onClick={() => {
-                            sendMethod("connect to server")
+                            const host = $("#host_client").val().toString();
+
+                            if (!host.length) {
+                                return console.log("pls enter value lolol");
+                            }
+
+                            sendMethod("connect to server", {host: host, port: 4011});
                         }}>Client</button>
                     </div>
                 )

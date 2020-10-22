@@ -11,4 +11,8 @@ async function startServer(host?: string, password?: string | number) {
     return await sendMethod("start server", {host: host || localIp, password: password})
 }
 
+ipcRenderer.on("message", (e, data) => {
+    console.log(data);
+});
+
 export { sendMethod, localIp, startServer };

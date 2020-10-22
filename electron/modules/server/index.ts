@@ -4,10 +4,13 @@ import * as net from "net";
 
 import portchecker from "../portchecker";
 import { ScreenMapArray } from "../screenmap/";
+import { ClientMethod, ClientMethodTypes } from "../client";
+import { MethodArguments } from "../..";
 
 type PasswordTypes = string | number | undefined;
 type EventTypes =
     | "server.start"
+    | "server.stop"
     | "client.connect"
     | "client.message"
     | "client.data"
@@ -38,12 +41,12 @@ interface ServerCallback {
     password?: PasswordTypes;
     screenArgs?: ScreenArguments;
     clientId?: string;
-    message?: any;
+    methodType?: ClientMethodTypes;
+    methodParams?: MethodParameters;
     data?: any;
 }
 
-type MessageTypes = "message" | "auth.reject" | "auth.accept" | "method";
-type MethodTypes = "mouse.move" | "screenmap.sync";
+type ServerMethodTypes = "mouse.move" | "screenmap.sync" | "auth.reject" | "auth.accept";
 
 interface MethodParameters {
     screenMap?: ScreenMapArray;
@@ -51,13 +54,16 @@ interface MethodParameters {
         x: number;
         y: number;
     };
+    password?: PasswordTypes;
+    screenArgs?: ScreenArguments
 }
 
-interface Message {
-    type: MessageTypes;
-    message?: any;
-    methodType?: MethodTypes;
+interface Method {
     methodParams?: MethodParameters;
+}
+
+interface ServerMethod extends Method {
+    methodType?: ServerMethodTypes;
 }
 
 const server = net.createServer();
@@ -106,65 +112,80 @@ class Server {
             };
 
             socket.on("data", (data) => {
-                const msg = JSON.parse(
-                    new TextDecoder().decode(new Uint8Array(data))
-                );
-
-                if (msg.type == "auth") {
-                    if (setPassword === undefined) {
-                        sockets[
-                            `${socket.remoteAddress}:${socket.remotePort}`
-                        ].authorized = true;
-
-                        this.callback({
-                            eventType: "client.connect",
-                            screenArgs: msg.extraData,
-                        });
-
-                        this.connectedUsersTotal++;
+                const queue: Array<string> = [];
+                let decodedMessage = new TextDecoder().decode(new Uint8Array(data));
+                while (decodedMessage.length > 0) {
+                    const length = parseInt(decodedMessage.substring(0, 3));
+                    decodedMessage = decodedMessage.substring(3);
+                    // console.log(decodedMessage);
+                    if (decodedMessage.length > length) {
+                        queue.push(decodedMessage.substring(0, length));
                     } else {
-                        if (msg.password === setPassword) {
+                        queue.push(decodedMessage);
+                    }
+                    // console.log(decodedMessage);
+                    decodedMessage = decodedMessage.substring(length);
+                    console.log(decodedMessage);
+                }
+
+                // console.log(queue);
+
+                for (let i = 0;i < queue.length;++i) {
+                    const msg: ClientMethod = JSON.parse(queue[i]);
+                    if (msg.methodType == "auth") {
+                        if (setPassword === undefined) {
                             sockets[
                                 `${socket.remoteAddress}:${socket.remotePort}`
                             ].authorized = true;
-
+    
                             this.callback({
                                 eventType: "client.connect",
-                                screenArgs: msg.extraData,
+                                screenArgs: msg.methodParams.screenArgs,
+                                clientId: sockets[
+                                    `${socket.remoteAddress}:${socket.remotePort}`
+                                ].id
                             });
-
-                            socket.write(JSON.stringify({
-                                type: "auth.accept"
-                            }));
-
+    
+                            this.sendMethodToClient(sockets[
+                                `${socket.remoteAddress}:${socket.remotePort}`
+                            ].id, "auth.accept");
+    
                             this.connectedUsersTotal++;
                         } else {
-                            socket.write(
-                                JSON.stringify({
-                                    type: "auth.reject",
-                                    reason: "Invalid Password",
-                                })
-                            );
+                            if (msg.methodParams.password === setPassword) {
+                                sockets[
+                                    `${socket.remoteAddress}:${socket.remotePort}`
+                                ].authorized = true;
+    
+                                this.callback({
+                                    eventType: "client.connect",
+                                    screenArgs: msg.methodParams.screenArgs,
+                                    clientId: sockets[
+                                        `${socket.remoteAddress}:${socket.remotePort}`
+                                    ].id
+                                });
+    
+                                this.sendMethodToClient(sockets[
+                                    `${socket.remoteAddress}:${socket.remotePort}`
+                                ].id, "auth.accept");
+    
+                                this.connectedUsersTotal++;
+                            } else {
+                                this.sendMethodToClient(sockets[
+                                    `${socket.remoteAddress}:${socket.remotePort}`
+                                ].id, "auth.reject");
+                            }
                         }
+                    } else {
+                        this.callback({
+                            eventType: "method",
+                            methodType: msg.methodType,
+                            methodParams: msg.methodParams,
+                            clientId: sockets[
+                                `${socket.remoteAddress}:${socket.remotePort}`
+                            ].id
+                        })
                     }
-                } else if (msg.type == "message") {
-                    this.callback({
-                        eventType: "client.message",
-                        clientId:
-                            sockets[
-                                `${socket.remoteAddress}:${socket.remotePort}`
-                            ].id,
-                        message: msg,
-                    });
-                } else {
-                    this.callback({
-                        eventType: "client.data",
-                        clientId:
-                            sockets[
-                                `${socket.remoteAddress}:${socket.remotePort}`
-                            ].id,
-                        data: msg,
-                    });
                 }
             });
 
@@ -197,6 +218,12 @@ class Server {
             });
         });
 
+        server.on("close", () => {
+            this.callback({
+                eventType: "server.stop"
+            });
+        });
+
         hasStartedServer = true;
 
         return "Initiated server start function";
@@ -225,43 +252,10 @@ class Server {
             }
         }
     }
-    sendMessageToAll(message: Message): string {
-        if (!hasStartedServer) return "Server hasn't started yet!";
-
-        for (const addr in sockets) {
-            const { socket } = sockets[addr];
-
-            socket.write(
-                JSON.stringify({
-                    type: "message",
-                    message: message,
-                })
-            );
-        }
-
-        return "Sent message!";
-    }
-    sendMessageToClient(clientId: string, message: Message): string {
-        if (!hasStartedServer) return "Server hasn't started yet!";
-
-        for (const addr in sockets) {
-            const { socket, id } = sockets[addr];
-
-            if (id == clientId) {
-                socket.write(
-                    JSON.stringify({
-                        type: "message",
-                        message: message,
-                    })
-                );
-            }
-        }
-        return "No clients found attached with the ID provided.";
-    }
     sendMethodToClient(
         clientId: string,
-        methodType: MethodTypes,
-        methodParams: MethodParameters
+        methodType: ServerMethodTypes,
+        methodParams?: MethodParameters
     ): string {
         if (!hasStartedServer) return "Server hasn't started yet!";
 
@@ -269,16 +263,20 @@ class Server {
             const { socket, id } = sockets[addr];
 
             if (id == clientId) {
+                const buf = JSON.stringify({
+                    methodType: methodType,
+                    methodParams: methodParams,
+                });
+                let buflen = buf.length.toString();
+                while (buflen.length < 3) {
+                    buflen = "0" + buflen;
+                }
                 socket.write(
-                    JSON.stringify({
-                        type: "method",
-                        methodType: methodType,
-                        methodParams: methodParams,
-                    })
+                    buflen + buf
                 );
             }
         }
     }
 }
 
-export { Server, ScreenArguments, Message, MethodTypes, MethodParameters, PasswordTypes };
+export { Server, Method, ServerMethod, ScreenArguments, ServerMethodTypes, MethodParameters, PasswordTypes };

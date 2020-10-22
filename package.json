@@ -1,6 +1,6 @@
 {
     "name": "rinku",
-    "version": "1.0.0-prototype-40",
+    "version": "1.0.0-alpha-1",
     "description": "Rinku (link)",
     "main": "./dist/main.js",
     "scripts": {
@@ -14,7 +14,7 @@
         "build:electron": "webpack --config webpack/electron.webpack.js",
         "build:react": "webpack --config webpack/react.webpack.js",
         "package": "npm-run-all build package:dist",
-        "package:dist": "electron-builder --dir",
+        "package:dist": "electron-builder",
         "lint": "eslint .",
         "prettier": "prettier --write .",
         "postinstall": "npm run rebuild",
@@ -22,7 +22,7 @@
     },
     "keywords": [],
     "author": "",
-    "license": "ISC",
+    "license": "MIT",
     "devDependencies": {
         "@babel/core": "^7.12.3",
         "@babel/plugin-transform-runtime": "^7.12.1",
@@ -73,6 +73,7 @@
             "target": "nsis"
         },
         "nsis": {
+            "oneClick": false,
             "perMachine": true
         },
         "directories": {
