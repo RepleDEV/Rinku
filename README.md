@@ -2,7 +2,9 @@
 
 **Link** multiple computers together, use **one** mouse and **one** keyboard and CONTROL them all!
 
-Basically a better version of [this](https://www.microsoft.com/en-us/download/details.aspx?id=35460)
+Basically a better version of [this](https://www.microsoft.com/en-us/download/details.aspx?id=35460).
+
+React Typescript Boilerplate: [here](https://github.com/diego3g/electron-typescript-react).
 
 ## Project Goals
 
@@ -17,34 +19,16 @@ Basically a better version of [this](https://www.microsoft.com/en-us/download/de
 ## Current Released Version:
 
 Finished prototype: done.
-Current stage: Pre-alpha testing and refining
+Current stage: Pre-alpha testing and refining. UI Design.
 
 ## Setup
 
 ```bash
-$ npm i; npm start
+$ npm i; npm run dev
 ```
 
-## Testing
+## Compile
 
 ```bash
-$ npm test
-```
-
-## TS Build
-
-```bash
-$ npm run build
-```
-
-## TS watch
-
-```bash
-$ npm run watch
-```
-
-## Compile / Make
-
-```bash
-$ npm run make
+$ npm run package
 ```
