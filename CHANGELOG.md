@@ -1,5 +1,10 @@
 # Project Changelog
 
+## 1.0.0-alpha-3 / 10-23-2020
+
+### > Changed
+Promisified `Server.start` function.
+
 ## 1.0.0-alpha-2 / 10-23-2020
 
 ### > Changed
