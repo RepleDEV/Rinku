@@ -1,11 +1,11 @@
 /* eslint @typescript-eslint/explicit-module-boundary-types: 0 */
+/* eslint no-async-promise-executor: 0 */
 
 import * as net from "net";
 
 import portchecker from "../portchecker";
 import { ScreenMapArray } from "../screenmap/";
 import { ClientMethod, ClientMethodTypes } from "../client";
-import { MethodArguments } from "../..";
 
 type PasswordTypes = string | number | undefined;
 type EventTypes =
@@ -86,83 +86,67 @@ class Server {
         this.callback = callback;
     }
 
-    async start(
+    start(
         port: number = 4011,
         host: string = "localhost",
         password?: PasswordTypes
     ): Promise<string> {
-        if (hasStartedServer) return "Server already started!";
+        return new Promise(async (resolve, reject) => {
+            if (hasStartedServer) return reject("Server already started!");
 
-        const isPortClear = await portchecker(port, host);
+            const isPortClear = await portchecker(port, host);
 
-        if (!isPortClear) return "Address already in use!";
+            if (!isPortClear) return reject("Address already in use!");
 
-        setPassword = password;
+            setPassword = password;
 
-        server.listen(port, host, () => {
-            this.callback({
-                eventType: "server.start",
-                port: port,
-                host: host,
-                password: password,
+            server.listen(port, host, () => {
+                this.callback({
+                    eventType: "server.start",
+                    port: port,
+                    host: host,
+                    password: password,
+                });
             });
-        });
 
-        server.on("connection", (socket) => {
-            sockets[`${socket.remoteAddress}:${socket.remotePort}`] = {
-                socket: socket,
-                id: `rinkuclient_${this.connectedUsersTotal}`,
-                authorized: false,
-            };
+            server.on("connection", (socket) => {
+                hasStartedServer = true;
 
-            socket.on("data", (data) => {
-                const queue: Array<string> = [];
-                let decodedMessage = new TextDecoder().decode(
-                    new Uint8Array(data)
+                resolve(
+                    `Started server. Password: ${password}, host: ${host}, port: ${port}.`
                 );
-                while (decodedMessage.length > 0) {
-                    const length = parseInt(decodedMessage.substring(0, 3));
-                    decodedMessage = decodedMessage.substring(3);
-                    // console.log(decodedMessage);
-                    if (decodedMessage.length > length) {
-                        queue.push(decodedMessage.substring(0, length));
-                    } else {
-                        queue.push(decodedMessage);
-                    }
-                    // console.log(decodedMessage);
-                    decodedMessage = decodedMessage.substring(length);
-                    console.log(decodedMessage);
-                }
 
-                // console.log(queue);
+                sockets[`${socket.remoteAddress}:${socket.remotePort}`] = {
+                    socket: socket,
+                    id: `rinkuclient_${this.connectedUsersTotal}`,
+                    authorized: false,
+                };
 
-                for (let i = 0; i < queue.length; ++i) {
-                    const msg: ClientMethod = JSON.parse(queue[i]);
-                    if (msg.methodType == "auth") {
-                        if (setPassword === undefined) {
-                            sockets[
-                                `${socket.remoteAddress}:${socket.remotePort}`
-                            ].authorized = true;
-
-                            this.callback({
-                                eventType: "client.connect",
-                                screenArgs: msg.methodParams.screenArgs,
-                                clientId:
-                                    sockets[
-                                        `${socket.remoteAddress}:${socket.remotePort}`
-                                    ].id,
-                            });
-
-                            this.sendMethodToClient(
-                                sockets[
-                                    `${socket.remoteAddress}:${socket.remotePort}`
-                                ].id,
-                                "auth.accept"
-                            );
-
-                            this.connectedUsersTotal++;
+                socket.on("data", (data) => {
+                    const queue: Array<string> = [];
+                    let decodedMessage = new TextDecoder().decode(
+                        new Uint8Array(data)
+                    );
+                    while (decodedMessage.length > 0) {
+                        const length = parseInt(decodedMessage.substring(0, 3));
+                        decodedMessage = decodedMessage.substring(3);
+                        // console.log(decodedMessage);
+                        if (decodedMessage.length > length) {
+                            queue.push(decodedMessage.substring(0, length));
                         } else {
-                            if (msg.methodParams.password === setPassword) {
+                            queue.push(decodedMessage);
+                        }
+                        // console.log(decodedMessage);
+                        decodedMessage = decodedMessage.substring(length);
+                        console.log(decodedMessage);
+                    }
+
+                    // console.log(queue);
+
+                    for (let i = 0; i < queue.length; ++i) {
+                        const msg: ClientMethod = JSON.parse(queue[i]);
+                        if (msg.methodType == "auth") {
+                            if (setPassword === undefined) {
                                 sockets[
                                     `${socket.remoteAddress}:${socket.remotePort}`
                                 ].authorized = true;
@@ -185,66 +169,86 @@ class Server {
 
                                 this.connectedUsersTotal++;
                             } else {
-                                this.sendMethodToClient(
+                                if (msg.methodParams.password === setPassword) {
+                                    sockets[
+                                        `${socket.remoteAddress}:${socket.remotePort}`
+                                    ].authorized = true;
+
+                                    this.callback({
+                                        eventType: "client.connect",
+                                        screenArgs: msg.methodParams.screenArgs,
+                                        clientId:
+                                            sockets[
+                                                `${socket.remoteAddress}:${socket.remotePort}`
+                                            ].id,
+                                    });
+
+                                    this.sendMethodToClient(
+                                        sockets[
+                                            `${socket.remoteAddress}:${socket.remotePort}`
+                                        ].id,
+                                        "auth.accept"
+                                    );
+
+                                    this.connectedUsersTotal++;
+                                } else {
+                                    this.sendMethodToClient(
+                                        sockets[
+                                            `${socket.remoteAddress}:${socket.remotePort}`
+                                        ].id,
+                                        "auth.reject"
+                                    );
+                                }
+                            }
+                        } else {
+                            this.callback({
+                                eventType: "method",
+                                methodType: msg.methodType,
+                                methodParams: msg.methodParams,
+                                clientId:
                                     sockets[
                                         `${socket.remoteAddress}:${socket.remotePort}`
                                     ].id,
-                                    "auth.reject"
-                                );
+                            });
+                        }
+                    }
+                });
+
+                socket.on("close", () => {
+                    this.disconnectClient(socket);
+                });
+
+                socket.on("end", () => {
+                    this.disconnectClient(socket);
+                });
+
+                socket.on("error", (err) => {
+                    if (err.message.includes("ECONNRESET")) {
+                        for (const addr in sockets) {
+                            const { socket: sock } = sockets[addr];
+
+                            if (
+                                sock.remoteAddress === socket.remoteAddress &&
+                                sock.remotePort === socket.remotePort
+                            ) {
+                                this.callback({
+                                    eventType: "client.disconnect.force",
+                                    clientId: sockets[addr].id,
+                                });
+
+                                delete sockets[addr];
                             }
                         }
-                    } else {
-                        this.callback({
-                            eventType: "method",
-                            methodType: msg.methodType,
-                            methodParams: msg.methodParams,
-                            clientId:
-                                sockets[
-                                    `${socket.remoteAddress}:${socket.remotePort}`
-                                ].id,
-                        });
                     }
-                }
+                });
             });
 
-            socket.on("close", () => {
-                this.disconnectClient(socket);
-            });
-
-            socket.on("end", () => {
-                this.disconnectClient(socket);
-            });
-
-            socket.on("error", (err) => {
-                if (err.message.includes("ECONNRESET")) {
-                    for (const addr in sockets) {
-                        const { socket: sock } = sockets[addr];
-
-                        if (
-                            sock.remoteAddress === socket.remoteAddress &&
-                            sock.remotePort === socket.remotePort
-                        ) {
-                            this.callback({
-                                eventType: "client.disconnect.force",
-                                clientId: sockets[addr].id,
-                            });
-
-                            delete sockets[addr];
-                        }
-                    }
-                }
+            server.on("close", () => {
+                this.callback({
+                    eventType: "server.stop",
+                });
             });
         });
-
-        server.on("close", () => {
-            this.callback({
-                eventType: "server.stop",
-            });
-        });
-
-        hasStartedServer = true;
-
-        return "Initiated server start function";
     }
     stop(): string {
         if (!hasStartedServer) return "Server hasn't started yet!";
