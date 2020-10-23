@@ -1,6 +1,6 @@
 {
     "name": "rinku",
-    "version": "1.0.0-alpha-1",
+    "version": "1.0.0-alpha-2",
     "description": "Rinku (link)",
     "main": "./dist/main.js",
     "scripts": {
@@ -18,10 +18,11 @@
         "lint": "eslint .",
         "prettier": "prettier --write .",
         "postinstall": "npm run rebuild",
-        "rebuild": "electron-rebuild"
+        "rebuild": "electron-rebuild",
+        "prebuild": "rimraf dist",
+        "predev": "npm run prebuild"
     },
-    "keywords": [],
-    "author": "",
+    "author": "RepleDEV",
     "license": "MIT",
     "devDependencies": {
         "@babel/core": "^7.12.3",
@@ -52,6 +53,7 @@
         "npm-run-all": "^4.1.5",
         "react": "^16.14.0",
         "react-dom": "^16.14.0",
+        "rimraf": "^3.0.2",
         "style-loader": "^2.0.0",
         "typescript": "^4.0.3",
         "typescript-plugin-css-modules": "^2.7.0",
@@ -61,6 +63,7 @@
         "webpack-dev-server": "^3.10.3"
     },
     "dependencies": {
+        "@repledev/rinku_mousemgr": "^1.0.1",
         "@repledev/rinku_winswitcher": "^1.0.15",
         "electron-squirrel-startup": "^1.0.0",
         "jquery": "^3.5.1",
@@ -81,7 +84,9 @@
         },
         "files": [
             "package.json",
-            "dist/**"
+            "dist/**",
+            "LICENSE",
+            "README.md"
         ]
     }
 }

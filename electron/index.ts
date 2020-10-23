@@ -4,6 +4,7 @@ import * as robotjs from "robotjs";
 import * as _ from "lodash";
 import * as url from 'url';
 import installExtension, { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } from 'electron-devtools-installer';
+import { moveMouse } from "@repledev/rinku_mousemgr";
 import { performance } from "perf_hooks";
 
 import { Server } from "./modules/server/";
@@ -67,10 +68,6 @@ const createMainWindow = () => {
     mainWindow.webContents.on("dom-ready", () => {
         // Set domHasLoaded to true
         domHasLoaded = true;
-
-        screenMap.addScreen(1366, 768, {x: 1366, y: 0}, "test");
-
-        Mouse.start();
     });
 
     mainWindow.on("closed", () => {
@@ -375,6 +372,8 @@ class Mouse {
         const { x: mouseX, y: mouseY } = mousePos;
 
         if (isOutside) {
+            const p1 = performance.now()
+
             const distance = [
                 mouseX - restingPlace[0],
                 mouseY - restingPlace[1],
@@ -452,6 +451,8 @@ class Mouse {
             }
 
             currentScreenId = translatedCoordinate.id;
+
+            console.log(performance.now() - p1);
 
             return;
         } else {
@@ -539,10 +540,10 @@ class Mouse {
         }
     }
     static reset(): void {
-        robotjs.moveMouse(restingPlace[0], restingPlace[1]);
+        this.move(restingPlace[0], restingPlace[1]);
     }
     static move(mouseX: number, mouseY: number): void {
-        robotjs.moveMouse(mouseX, mouseY);
+        moveMouse(mouseX, mouseY);
     }
     static start(delay = 2): void {
         if (_.isUndefined(Mouse.loop)) {
