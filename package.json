@@ -77,7 +77,8 @@
         },
         "nsis": {
             "oneClick": false,
-            "perMachine": true
+            "perMachine": true,
+            "allowToChangeInstallationDirectory": true
         },
         "directories": {
             "output": "out"
@@ -85,7 +86,6 @@
         "files": [
             "package.json",
             "dist/**",
-            "LICENSE",
             "README.md"
         ]
     }
