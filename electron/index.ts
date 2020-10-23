@@ -2,8 +2,11 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import * as path from "path";
 import * as robotjs from "robotjs";
 import * as _ from "lodash";
-import * as url from 'url';
-import installExtension, { REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } from 'electron-devtools-installer';
+import * as url from "url";
+import installExtension, {
+    REACT_DEVELOPER_TOOLS,
+    REDUX_DEVTOOLS,
+} from "electron-devtools-installer";
 import { moveMouse } from "@repledev/rinku_mousemgr";
 import { performance } from "perf_hooks";
 
@@ -49,14 +52,14 @@ const createMainWindow = () => {
     mainWindow.maximize();
 
     // Check if it's production
-    if (process.env.NODE_ENV === 'development') {
-        mainWindow.loadURL('http://localhost:4000');
+    if (process.env.NODE_ENV === "development") {
+        mainWindow.loadURL("http://localhost:4000");
     } else {
         mainWindow.loadURL(
             url.format({
-                pathname: path.join(__dirname, 'renderer/index.html'),
-                protocol: 'file:',
-                slashes: true
+                pathname: path.join(__dirname, "renderer/index.html"),
+                protocol: "file:",
+                slashes: true,
             })
         );
     }
@@ -116,12 +119,18 @@ const createCursorWindow = () => {
 app.on("ready", () => {
     createMainWindow();
     createCursorWindow();
-}).whenReady().then(() => {
-    if (process.env.NODE_ENV === "development") {
-        installExtension(REACT_DEVELOPER_TOOLS).then((name) => console.log(`Added Extension:  ${name}`)).catch((err) => console.log('An error occurred: ', err));
-        installExtension(REDUX_DEVTOOLS).then((name) => console.log(`Added Extension:  ${name}`)).catch((err) => console.log('An error occurred: ', err));
-    }
-});
+})
+    .whenReady()
+    .then(() => {
+        if (process.env.NODE_ENV === "development") {
+            installExtension(REACT_DEVELOPER_TOOLS)
+                .then((name) => console.log(`Added Extension:  ${name}`))
+                .catch((err) => console.log("An error occurred: ", err));
+            installExtension(REDUX_DEVTOOLS)
+                .then((name) => console.log(`Added Extension:  ${name}`))
+                .catch((err) => console.log("An error occurred: ", err));
+        }
+    });
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
@@ -181,16 +190,23 @@ const server = new Server((e) => {
             screenMap.removeById(clientId);
             break;
         case "client.connect":
-            server.sendMethodToClient(clientId, "screenmap.sync", {screenMap: screenMap.getScreenMap()});
-            pendingScreens.push({...screenArgs.screen, id: clientId});
+            server.sendMethodToClient(clientId, "screenmap.sync", {
+                screenMap: screenMap.getScreenMap(),
+            });
+            pendingScreens.push({ ...screenArgs.screen, id: clientId });
             break;
         case "method":
             switch (methodType) {
                 case "setscreen":
-                    for (let i = 0;i < pendingScreens.length;++i) {
+                    for (let i = 0; i < pendingScreens.length; ++i) {
                         const { width, height, id } = pendingScreens[i];
                         if (id === clientId) {
-                            screenMap.addScreen(width, height, methodParams.pos, id);
+                            screenMap.addScreen(
+                                width,
+                                height,
+                                methodParams.pos,
+                                id
+                            );
                             pendingScreens.splice(i, 1);
                             break;
                         }
@@ -220,8 +236,8 @@ const client = new Client((e) => {
             client.sendMethod("setscreen", {
                 pos: {
                     x: 1366,
-                    y: 0
-                }
+                    y: 0,
+                },
             });
             break;
         case "method":
@@ -231,7 +247,7 @@ const client = new Client((e) => {
                     Mouse.move(methodParams.pos.x, methodParams.pos.y);
                     break;
                 case "screenmap.sync":
-                    sendMessageToMainWindow("screenmapsync")
+                    sendMessageToMainWindow("screenmapsync");
                     screenMap.setScreenMap(methodParams.screenMap);
                     break;
                 default:
@@ -247,12 +263,18 @@ type CurrentInstances = "Standby" | "Server" | "Client";
 
 let currentInstance: CurrentInstances = "Standby";
 
-type MethodTypes = "start server" | "stop server" | "connect to server" | "disconnect from server" | "retry auth" | string;
+type MethodTypes =
+    | "start server"
+    | "stop server"
+    | "connect to server"
+    | "disconnect from server"
+    | "retry auth"
+    | string;
 interface MethodArguments {
-    port?: number,
-    host?: string,
-    password?: number | string,
-    screenPos?: CoordinateObject
+    port?: number;
+    host?: string;
+    password?: number | string;
+    screenPos?: CoordinateObject;
 }
 
 class IpcMethods {
@@ -266,7 +288,7 @@ class IpcMethods {
         },
         stop: function () {
             return server.stop();
-        }
+        },
     };
     static client = {
         connect: async function (
@@ -327,7 +349,7 @@ class IpcMethods {
                     methodArgs.host,
                     methodArgs.password,
                     {
-                        screen: robotjs.getScreenSize()
+                        screen: robotjs.getScreenSize(),
                     }
                 );
             case "disconnect from server":
@@ -350,7 +372,7 @@ class IpcMethods {
 	2 ==> Main ROBOTJS functions
 
 */
-let pendingScreens: Array<{width: number, height: number, id: string}> = []; // eslint-disable-line
+let pendingScreens: Array<{ width: number; height: number; id: string }> = []; // eslint-disable-line
 
 const screenSize = robotjs.getScreenSize();
 
@@ -372,7 +394,7 @@ class Mouse {
         const { x: mouseX, y: mouseY } = mousePos;
 
         if (isOutside) {
-            const p1 = performance.now()
+            const p1 = performance.now();
 
             const distance = [
                 mouseX - restingPlace[0],
@@ -566,4 +588,4 @@ class Mouse {
     }
 }
 
-export { MethodTypes, MethodArguments }
+export { MethodTypes, MethodArguments };

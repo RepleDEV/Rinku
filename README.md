@@ -13,8 +13,9 @@ React Typescript Boilerplate: [here](https://github.com/diego3g/electron-typescr
 3. OS: Windows, MacOS (When i actually get a mac lol), Linux (Maybe).
 
 ## Tasks:
-- Reduce delay
-- Maximize polling rate (Try to **not** lose polling rate)
+
+-   Reduce delay
+-   Maximize polling rate (Try to **not** lose polling rate)
 
 ## Current Released Version:
 

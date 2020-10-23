@@ -23,9 +23,9 @@ module.exports = {
             {
                 test: /\.node$/,
                 use: {
-                    loader: "node-loader"
-                }
-            }
+                    loader: "node-loader",
+                },
+            },
         ],
     },
     node: {

@@ -24,8 +24,8 @@ module.exports = {
             },
             {
                 test: /\.css$/,
-                use: ["style-loader", "css-loader"]
-            }
+                use: ["style-loader", "css-loader"],
+            },
         ],
     },
     devServer: {
@@ -41,5 +41,5 @@ module.exports = {
         filename: "js/[name].js",
         publicPath: "./",
     },
-    plugins: [new HtmlWebpackPlugin({ title: "Rinku"})],
+    plugins: [new HtmlWebpackPlugin({ title: "Rinku" })],
 };

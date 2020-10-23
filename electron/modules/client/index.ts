@@ -31,7 +31,7 @@ interface ClientCallback {
 type ClientMethodTypes = "screenmap.sync" | "auth" | "setscreen";
 
 interface ClientMethod extends Method {
-    methodType?: ClientMethodTypes
+    methodType?: ClientMethodTypes;
 }
 
 const client = new net.Socket();
@@ -58,23 +58,30 @@ class Client {
 
                 resolve("Connected!");
 
-                this.sendMethod("auth", {password: password, screenArgs: screenArgs});
+                this.sendMethod("auth", {
+                    password: password,
+                    screenArgs: screenArgs,
+                });
 
                 hasConnected = true;
             });
-            
+
             client.on("data", (data) => {
                 const queue: Array<string> = [];
-                const decodedMessage = new TextDecoder().decode(new Uint8Array(data)).split("");
+                const decodedMessage = new TextDecoder()
+                    .decode(new Uint8Array(data))
+                    .split("");
                 console.log(new TextDecoder().decode(new Uint8Array(data)));
                 while (decodedMessage.length > 0) {
-                    const length = parseInt(decodedMessage.splice(0, 3).join(""));
+                    const length = parseInt(
+                        decodedMessage.splice(0, 3).join("")
+                    );
                     queue.push(decodedMessage.splice(0, length).join(""));
                 }
 
                 console.log(queue);
 
-                for (let i = 0;i < queue.length;++i) {
+                for (let i = 0; i < queue.length; ++i) {
                     const msg: ServerMethod = JSON.parse(queue[i]);
                     switch (msg.methodType) {
                         case "auth.reject":
@@ -84,7 +91,7 @@ class Client {
                             break;
                         case "auth.accept":
                             this.callback({
-                                eventType: "auth.accept"
+                                eventType: "auth.accept",
                             });
                             break;
                         default:
@@ -138,18 +145,18 @@ class Client {
         return "Disconnected";
     }
     retryAuth(password: PasswordTypes): void {
-        this.sendMethod("auth", {password: password});
+        this.sendMethod("auth", { password: password });
     }
     sendMethod(methodType: ClientMethodTypes, methodParams: MethodParameters) {
         const buf = JSON.stringify({
             methodType: methodType,
-            methodParams: methodParams
+            methodParams: methodParams,
         });
         let buflen = buf.length.toString();
-        while (buflen.length < 3){
+        while (buflen.length < 3) {
             buflen = "0" + buflen;
         }
-        client.write(buflen + buf)
+        client.write(buflen + buf);
     }
 }
 
