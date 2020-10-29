@@ -1,10 +1,10 @@
 import React from "react";
 import { render } from "react-dom";
-import { Menu } from "./components/Menus";
+import { MainMenu } from "./components/Menus";
+import { Sidebar } from "./components/Sidebar";
+import $ from "jquery";
+
 import "../res/styles/styles.css";
 
-const mainElement = document.createElement("div");
-mainElement.setAttribute("id", "root");
-document.body.appendChild(mainElement);
-
-render(<Menu menu="main" />, mainElement);
+// Load the sidebar
+render(<Sidebar />, $("#navbar")[0]);

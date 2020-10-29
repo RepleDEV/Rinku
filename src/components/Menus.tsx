@@ -1,53 +1,41 @@
-import React from "react";
+import React, { useState } from "react";
 import $ from "jquery";
+import { Transition } from "react-transition-group";
 
-import { sendMethod, startServer } from "../TS/ipc";
+const MainMenu = (): JSX.Element => {
+    const [inProp, setInProp] = useState(true);
 
-type MenuTypes = "main";
+    const duration = 225;
 
-class Menu extends React.Component<{ menu: MenuTypes }> {
-    render() {
-        switch (this.props.menu) {
-            case "main":
-                return (
-                    <div className="menu">
-                        <h1>Rinku</h1>
-                        <input id="host_server" />
-                        <button
-                            onClick={() => {
-                                const host = $("#host_server").val().toString();
-                                if (!host.length) {
-                                    return console.log("pls enter value lolol");
-                                }
-                                console.log(startServer(host));
-                            }}
-                        >
-                            Server
-                        </button>
+    const defaultStyle = {
+        transition: `opacity ${duration}ms ease-in-out`,
+        opacity: 1,
+    };
+
+    const transitionStyles = {
+        exiting: { opacity: 0 },
+        exited: { opacity: 0 },
+    };
+
+    return (
+        <Transition in={inProp} timeout={duration}>
+            {(state) => (
+                <div
+                    style={{
+                        ...defaultStyle,
+                        ...transitionStyles[state],
+                    }}
+                    className="menu main"
+                >
+                    <div className="selectorContainer">
+                        <button className="hostButton">Host</button>
                         <br />
-                        <input id="host_client" />
-                        <button
-                            onClick={() => {
-                                const host = $("#host_client").val().toString();
-
-                                if (!host.length) {
-                                    return console.log("pls enter value lolol");
-                                }
-
-                                sendMethod("connect to server", {
-                                    host: host,
-                                    port: 4011,
-                                });
-                            }}
-                        >
-                            Client
-                        </button>
+                        <button className="clientButton">Client</button>
                     </div>
-                );
-            default:
-                return <div className="menu"></div>;
-        }
-    }
-}
+                </div>
+            )}
+        </Transition>
+    );
+};
 
-export { Menu };
+export { MainMenu };

@@ -26,6 +26,18 @@ module.exports = {
                 test: /\.css$/,
                 use: ["style-loader", "css-loader"],
             },
+            {
+                test: /\.js$/,
+                include: [path.resolve("../src/JS")],
+                use: [
+                    {
+                        loader: "raw-loader",
+                        options: {
+                            esModule: false,
+                        },
+                    },
+                ],
+            },
         ],
     },
     devServer: {
@@ -41,5 +53,12 @@ module.exports = {
         filename: "js/[name].js",
         publicPath: "./",
     },
-    plugins: [new HtmlWebpackPlugin({ title: "Rinku" })],
+    plugins: [
+        new HtmlWebpackPlugin({
+            filename: "index.html",
+            template: "src/index.html",
+            inject: true,
+            cache: true,
+        }),
+    ],
 };
