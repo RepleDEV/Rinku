@@ -1,5 +1,17 @@
 # Project Changelog
 
+## 1.0.0-alpha-5 / 10-30-2020
+
+### > New
+
+Experimental encryption module.
+
+## 1.0.0-alpha-4 / 10-29-2020
+
+### > New
+
+Added simple UI.
+
 ## 1.0.0-alpha-3 / 10-23-2020
 
 ### > Changed
