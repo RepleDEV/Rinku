@@ -25,6 +25,10 @@
     },
     "author": "RepleDEV",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/repledev/rinku"
+    },
     "devDependencies": {
         "@babel/core": "^7.12.3",
         "@babel/plugin-transform-runtime": "^7.12.1",
