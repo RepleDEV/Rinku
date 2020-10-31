@@ -50,7 +50,8 @@ type ServerMethodTypes =
     | "mouse.move"
     | "screenmap.sync"
     | "auth.reject"
-    | "auth.accept";
+    | "auth.accept"
+    | "message.reject";
 
 interface MethodParameters {
     screenMap?: ScreenMapArray;
@@ -123,6 +124,14 @@ class Server {
                 };
 
                 socket.on("data", (data) => {
+                    const client =
+                        sockets[`${socket.remoteAddress}:${socket.remotePort}`];
+
+                    if (!client.authorized) {
+                        this.sendMethodToClient(client.id, "message.reject");
+                        return;
+                    }
+
                     const queue: Array<string> = [];
                     let decodedMessage = new TextDecoder().decode(
                         new Uint8Array(data)
@@ -130,18 +139,14 @@ class Server {
                     while (decodedMessage.length > 0) {
                         const length = parseInt(decodedMessage.substring(0, 3));
                         decodedMessage = decodedMessage.substring(3);
-                        // console.log(decodedMessage);
                         if (decodedMessage.length > length) {
                             queue.push(decodedMessage.substring(0, length));
                         } else {
                             queue.push(decodedMessage);
                         }
-                        // console.log(decodedMessage);
                         decodedMessage = decodedMessage.substring(length);
                         console.log(decodedMessage);
                     }
-
-                    // console.log(queue);
 
                     for (let i = 0; i < queue.length; ++i) {
                         const msg: ClientMethod = JSON.parse(queue[i]);
@@ -154,16 +159,11 @@ class Server {
                                 this.callback({
                                     eventType: "client.connect",
                                     screenArgs: msg.methodParams.screenArgs,
-                                    clientId:
-                                        sockets[
-                                            `${socket.remoteAddress}:${socket.remotePort}`
-                                        ].id,
+                                    clientId: client.id,
                                 });
 
                                 this.sendMethodToClient(
-                                    sockets[
-                                        `${socket.remoteAddress}:${socket.remotePort}`
-                                    ].id,
+                                    client.id,
                                     "auth.accept"
                                 );
 
@@ -177,25 +177,18 @@ class Server {
                                     this.callback({
                                         eventType: "client.connect",
                                         screenArgs: msg.methodParams.screenArgs,
-                                        clientId:
-                                            sockets[
-                                                `${socket.remoteAddress}:${socket.remotePort}`
-                                            ].id,
+                                        clientId: client.id,
                                     });
 
                                     this.sendMethodToClient(
-                                        sockets[
-                                            `${socket.remoteAddress}:${socket.remotePort}`
-                                        ].id,
+                                        client.id,
                                         "auth.accept"
                                     );
 
                                     this.connectedUsersTotal++;
                                 } else {
                                     this.sendMethodToClient(
-                                        sockets[
-                                            `${socket.remoteAddress}:${socket.remotePort}`
-                                        ].id,
+                                        client.id,
                                         "auth.reject"
                                     );
                                 }
@@ -205,10 +198,7 @@ class Server {
                                 eventType: "method",
                                 methodType: msg.methodType,
                                 methodParams: msg.methodParams,
-                                clientId:
-                                    sockets[
-                                        `${socket.remoteAddress}:${socket.remotePort}`
-                                    ].id,
+                                clientId: client.id,
                             });
                         }
                     }

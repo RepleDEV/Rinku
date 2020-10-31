@@ -1,4 +1,13 @@
-temp/
-dist/
 node_modules/
+
+temp/
+
+# Webpack compile directory
+dist/
+
+# Electron compile directory
 out/
+
+package-lock.json
+
+LICENSE

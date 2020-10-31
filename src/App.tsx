@@ -8,3 +8,6 @@ import "../res/styles/styles.css";
 
 // Load the sidebar
 render(<Sidebar />, $("#navbar")[0]);
+
+// Load main element
+render(<MainMenu />, $("#root")[0]);

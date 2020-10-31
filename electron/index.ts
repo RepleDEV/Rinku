@@ -268,8 +268,7 @@ type MethodTypes =
     | "stop server"
     | "connect to server"
     | "disconnect from server"
-    | "retry auth"
-    | string;
+    | "retry auth";
 interface MethodArguments {
     port?: number;
     host?: string;

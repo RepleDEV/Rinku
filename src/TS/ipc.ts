@@ -10,7 +10,10 @@ async function sendMethod(
     return await ipcRenderer.invoke("mainWindow", method, methodArgs);
 }
 
-async function startServer(host?: string, password?: string | number) {
+async function startServer(
+    host?: string,
+    password?: string | number
+): Promise<string | void> {
     return await sendMethod("start server", {
         host: host || localIp,
         password: password,

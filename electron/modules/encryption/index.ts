@@ -51,7 +51,7 @@ function generateKeys(passphrase: string): Promise<KeyPair> {
  * Encrypt a string of text using a public key.
  * @param str String to encrypt.
  * @param publicKey Public Key.
- * 
+ *
  * @returns Encrypted text in base64 format.
  */
 function encrypt(str: string, publicKey: string) {
@@ -73,7 +73,7 @@ function decrypt(str: string, privateKey: string, passphrase: string): string {
     const decrypted = crypto.privateDecrypt(
         {
             key: privateKey,
-            passphrase: passphrase
+            passphrase: passphrase,
         },
         buf
     );

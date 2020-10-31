@@ -1,6 +1,6 @@
 {
     "name": "rinku",
-    "version": "1.0.0-alpha-5",
+    "version": "1.0.0-alpha-6",
     "description": "Rinku (link)",
     "main": "./dist/main.js",
     "scripts": {
@@ -13,6 +13,7 @@
         "build:run": "npm-run-all build start:electron",
         "build:electron": "webpack --config webpack/electron.webpack.js",
         "build:react": "webpack --config webpack/react.webpack.js",
+        "prepackage": "rimraf out",
         "package": "npm-run-all build package:dist",
         "package:dist": "electron-builder",
         "lint": "eslint .",
