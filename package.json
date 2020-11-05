@@ -76,6 +76,7 @@
         "@fortawesome/free-solid-svg-icons": "^5.15.1",
         "@fortawesome/react-fontawesome": "^0.1.12",
         "@repledev/rinku_mousemgr": "^1.0.1",
+        "@repledev/rinku_native_addons": "^1.3.0",
         "@repledev/rinku_winswitcher": "^1.0.15",
         "electron-squirrel-startup": "^1.0.0",
         "jquery": "^3.5.1",

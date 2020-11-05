@@ -51,7 +51,9 @@ type ServerMethodTypes =
     | "screenmap.sync"
     | "auth.reject"
     | "auth.accept"
-    | "message.reject";
+    | "message.reject"
+    | "keyboard.keydown"
+    | "keyboard.keyup";
 
 interface MethodParameters {
     screenMap?: ScreenMapArray;
@@ -61,6 +63,7 @@ interface MethodParameters {
     };
     password?: PasswordTypes;
     screenArgs?: ScreenArguments;
+    keyCode?: number;
 }
 
 interface Method {
@@ -108,14 +111,16 @@ class Server {
                     host: host,
                     password: password,
                 });
-            });
 
-            server.on("connection", (socket) => {
-                hasStartedServer = true;
+                console.log("Listened");
 
                 resolve(
                     `Started server. Password: ${password}, host: ${host}, port: ${port}.`
                 );
+            });
+
+            server.on("connection", (socket) => {
+                hasStartedServer = true;
 
                 sockets[`${socket.remoteAddress}:${socket.remotePort}`] = {
                     socket: socket,
@@ -145,7 +150,6 @@ class Server {
                             queue.push(decodedMessage);
                         }
                         decodedMessage = decodedMessage.substring(length);
-                        console.log(decodedMessage);
                     }
 
                     for (let i = 0; i < queue.length; ++i) {

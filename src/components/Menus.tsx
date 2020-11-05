@@ -39,15 +39,12 @@ const MainMenu = (): JSX.Element => {
                             className="hostButton"
                             onClick={() => {
                                 const hostInput = $("#host_input");
-                                const [
-                                    host,
-                                    port,
-                                ] = hostInput.val().toString().split(":");
 
-                                if (host && port) {
+                                const host = hostInput.val().toString();
+
+                                if (host) {
                                     sendMethod("start server", {
-                                        host: host,
-                                        port: parseInt(port),
+                                        host: host
                                     }).then(console.log);
                                 } else {
                                     console.log("Please enter value");
@@ -63,15 +60,11 @@ const MainMenu = (): JSX.Element => {
                             className="clientButton"
                             onClick={() => {
                                 const clientInput = $("#client_input");
-                                const [
-                                    host,
-                                    port,
-                                ] = clientInput.val().toString().split(":");
+                                const host = clientInput.val();
 
-                                if (host && port) {
+                                if (host) {
                                     sendMethod("connect to server", {
-                                        host: host,
-                                        port: parseInt(port),
+                                        host: host.toString()
                                     }).then(console.log);
                                 } else {
                                     console.log("Please enter value");

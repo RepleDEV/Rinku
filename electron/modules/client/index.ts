@@ -71,15 +71,12 @@ class Client {
                 const decodedMessage = new TextDecoder()
                     .decode(new Uint8Array(data))
                     .split("");
-                console.log(new TextDecoder().decode(new Uint8Array(data)));
                 while (decodedMessage.length > 0) {
                     const length = parseInt(
                         decodedMessage.splice(0, 3).join("")
                     );
                     queue.push(decodedMessage.splice(0, length).join(""));
                 }
-
-                console.log(queue);
 
                 for (let i = 0; i < queue.length; ++i) {
                     const msg: ServerMethod = JSON.parse(queue[i]);

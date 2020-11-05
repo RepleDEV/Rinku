@@ -7,6 +7,7 @@ import installExtension, {
     REACT_DEVELOPER_TOOLS,
     REDUX_DEVTOOLS,
 } from "electron-devtools-installer";
+import * as addon from "@repledev/rinku_native_addons";
 import { moveMouse } from "@repledev/rinku_mousemgr";
 
 import { Server } from "./modules/server/";
@@ -22,13 +23,11 @@ if (require("electron-squirrel-startup")) {
     app.quit();
 }
 
-let domHasLoaded = false;
-
 // Main Window
 let mainWindow: BrowserWindow | null;
 
-// Cursor Window
-let cursorWindow: BrowserWindow | null;
+// Cursor overlay Window
+let overlayWindow: BrowserWindow | null;
 
 const createMainWindow = () => {
     // Create the browser window.
@@ -68,23 +67,18 @@ const createMainWindow = () => {
 
     // Once dom is ready
     mainWindow.webContents.on("dom-ready", () => {
-        // Set domHasLoaded to true
-        domHasLoaded = true;
-
-        screenMap.addScreen(1366, 768, { x: 1366, y: 0}, "test");
-
-        Mouse.start();
+        // 
     });
 
     mainWindow.on("closed", () => {
         mainWindow = null;
 
-        cursorWindow.close();
+        overlayWindow.close();
     });
 };
 
-const createCursorWindow = () => {
-    cursorWindow = new BrowserWindow({
+const createOverlayWindow = () => {
+    overlayWindow = new BrowserWindow({
         show: false,
         resizable: false,
         movable: false,
@@ -93,19 +87,20 @@ const createCursorWindow = () => {
             nodeIntegration: true,
         },
         skipTaskbar: true,
-        transparent: true
+        opacity: 0.6,
+        fullscreen: true,
     });
 
-    cursorWindow.setMenuBarVisibility(false);
+    overlayWindow.setMenuBarVisibility(false);
 
-    cursorWindow.setAlwaysOnTop(true, "normal");
+    overlayWindow.setAlwaysOnTop(true, "normal");
 
-    cursorWindow.maximize();
+    overlayWindow.maximize();
 
-    cursorWindow.loadFile(path.join(__dirname, "../res/worker/index.html"));
+    overlayWindow.loadFile(path.join(__dirname, "../res/worker/index.html"));
 
-    cursorWindow.on("closed", () => {
-        cursorWindow = null;
+    overlayWindow.on("closed", () => {
+        overlayWindow = null;
     });
 };
 
@@ -114,7 +109,7 @@ const createCursorWindow = () => {
 // Some APIs can only be used after this event occurs.
 app.on("ready", () => {
     createMainWindow();
-    createCursorWindow();
+    createOverlayWindow();
 })
     .whenReady()
     .then(() => {
@@ -153,17 +148,17 @@ app.on("activate", () => {
 
 // Electron IPC
 function sendMessageToMainWindow(message: any) {
-    if (!domHasLoaded) return "DOM HASN'T LOADED YET!";
+    console.log(message);
 
     mainWindow.webContents.send("message", message);
 
     return "Sent message!";
 }
 
-function sendMessageToCursorWindow(message: any) {
-    if (!domHasLoaded) return "DOM HASN'T LOADED YET!";
+function sendMessageToOverlayWindow(message: any) {
+    console.log(message);
 
-    cursorWindow.webContents.send("message", message);
+    overlayWindow.webContents.send("message", message);
 
     return "Sent message!";
 }
@@ -172,7 +167,9 @@ ipcMain.handle("mainWindow", async (e, ...args) => {
     return await IpcMethods.exec(args);
 });
 
-ipcMain.handle("cursorWindow", async (e, ...args) => {});
+ipcMain.handle("overlayWindow", async (e, ...args) => {
+    return overlayWindowEventHandler(args[0], args[1]);
+});
 
 const server = new Server((e) => {
     sendMessageToMainWindow(e);
@@ -246,6 +243,12 @@ const client = new Client((e) => {
                     sendMessageToMainWindow("screenmapsync");
                     screenMap.setScreenMap(methodParams.screenMap);
                     break;
+                case "keyboard.keydown":
+                    addon.keyboard.keyDown(methodParams.keyCode);
+                    break;
+                case "keyboard.keyup":
+                    addon.keyboard.keyUp(methodParams.keyCode);
+                    break;
                 default:
                     break;
             }
@@ -259,32 +262,26 @@ type CurrentInstances = "Standby" | "Server" | "Client";
 
 let currentInstance: CurrentInstances = "Standby";
 
-type MethodTypes =
+type MainWindowMethodTypes =
     | "start server"
     | "stop server"
     | "connect to server"
     | "disconnect from server"
     | "retry auth";
-interface MethodArguments {
+interface MainWindowMethodArguments {
     port?: number;
     host?: string;
     password?: number | string;
     screenPos?: CoordinateObject;
 }
 
+type OverlayWindowEventTypes = "keydown" | "keyup";
+
+interface OverlayWindowEventArguments {
+    keyCode?: number;
+}
+
 class IpcMethods {
-    static server = {
-        start: async function (
-            port?: number,
-            host?: string,
-            password?: string | number
-        ) {
-            return await server.start(port, host, password);
-        },
-        stop: function () {
-            return server.stop();
-        },
-    };
     static client = {
         connect: async function (
             port: number,
@@ -302,8 +299,8 @@ class IpcMethods {
         },
     };
     static async exec(args: any[]) {
-        const method: MethodTypes = args[0];
-        const methodArgs: MethodArguments = args[1] || {};
+        const method: MainWindowMethodTypes = args[0];
+        const methodArgs: MainWindowMethodArguments = args[1] || {};
 
         if (typeof method != "string")
             return "Method parameter not of string type!";
@@ -319,7 +316,7 @@ class IpcMethods {
 
                 Mouse.start();
 
-                return await this.server.start(
+                return await server.start(
                     methodArgs.port,
                     methodArgs.host,
                     methodArgs.password
@@ -330,7 +327,7 @@ class IpcMethods {
 
                 currentInstance = "Standby";
 
-                return this.server.stop();
+                return server.stop();
             case "connect to server":
                 if (currentInstance == "Server")
                     return "You can't be a client if you're a server!";
@@ -362,6 +359,23 @@ class IpcMethods {
         }
     }
 }
+
+function overlayWindowEventHandler(
+    e: OverlayWindowEventTypes,
+    args: OverlayWindowEventArguments
+): void {
+    switch (e) {
+        case "keydown":
+            server.sendMethodToClient(currentScreenId, "keyboard.keydown", args)
+            break;
+        case "keyup":
+            server.sendMethodToClient(currentScreenId, "keyboard.keyup", args);
+            break;
+        default:
+            break;
+    }
+}
+
 /* 
 
 	2 ==> Main ROBOTJS functions
@@ -452,8 +466,8 @@ class Mouse {
 
                 isOutside = false;
 
-                cursorWindow.blur();
-                cursorWindow.hide();
+                overlayWindow.blur();
+                overlayWindow.hide();
 
                 winswitcher.activateStoredWindow();
             } else {
@@ -511,14 +525,18 @@ class Mouse {
                         translatedCoordinate.pos
                     );
 
+                    for (let i = 0; i < 3; ++i) addon.mouse.up(i);
+
                     this.reset();
 
                     isOutside = true;
 
                     winswitcher.storeActiveWindow();
 
-                    cursorWindow.show();
-                    cursorWindow.focus();
+                    overlayWindow.show();
+                    overlayWindow.focus();
+
+                    addon.mouse.click("left");
 
                     break;
                 }
@@ -579,4 +597,7 @@ class Mouse {
     }
 }
 
-export { MethodTypes, MethodArguments };
+export {
+    MainWindowMethodTypes as MethodTypes,
+    MainWindowMethodArguments as MethodArguments,
+};
