@@ -96,3 +96,6 @@ temp/
 
 # Electron-builder output directory
 out/
+
+# VSCode config
+.vscode/

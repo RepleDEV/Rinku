@@ -1,4 +1,5 @@
 {
     // This is needed so that vscode loads plugins from the tsconfig file, which enables imports of .module.css files.
-    "typescript.tsdk": "node_modules\\typescript\\lib"
+    "typescript.tsdk": "node_modules\\typescript\\lib",
+    "discord.enabled": false
 }

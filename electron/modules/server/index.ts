@@ -53,7 +53,9 @@ type ServerMethodTypes =
     | "auth.accept"
     | "message.reject"
     | "keyboard.keydown"
-    | "keyboard.keyup";
+    | "keyboard.keyup"
+    | "mouse.down"
+    | "mouse.up";
 
 interface MethodParameters {
     screenMap?: ScreenMapArray;
@@ -64,6 +66,7 @@ interface MethodParameters {
     password?: PasswordTypes;
     screenArgs?: ScreenArguments;
     keyCode?: number;
+    mouseBtn?: number;
 }
 
 interface Method {
@@ -112,8 +115,6 @@ class Server {
                     password: password,
                 });
 
-                console.log("Listened");
-
                 resolve(
                     `Started server. Password: ${password}, host: ${host}, port: ${port}.`
                 );
@@ -131,11 +132,6 @@ class Server {
                 socket.on("data", (data) => {
                     const client =
                         sockets[`${socket.remoteAddress}:${socket.remotePort}`];
-
-                    if (!client.authorized) {
-                        this.sendMethodToClient(client.id, "message.reject");
-                        return;
-                    }
 
                     const queue: Array<string> = [];
                     let decodedMessage = new TextDecoder().decode(
@@ -198,6 +194,14 @@ class Server {
                                 }
                             }
                         } else {
+                            if (!client.authorized) {
+                                this.sendMethodToClient(
+                                    client.id,
+                                    "message.reject"
+                                );
+                                return;
+                            }
+
                             this.callback({
                                 eventType: "method",
                                 methodType: msg.methodType,

@@ -8,14 +8,11 @@ import installExtension, {
     REDUX_DEVTOOLS,
 } from "electron-devtools-installer";
 import * as addon from "@repledev/rinku_native_addons";
-import { moveMouse } from "@repledev/rinku_mousemgr";
 
 import { Server } from "./modules/server/";
 import { Client } from "./modules/client/";
 
 import { ScreenMap, CoordinateObject } from "./modules/screenmap/";
-
-import * as winswitcher from "@repledev/rinku_winswitcher";
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require("electron-squirrel-startup")) {
@@ -67,7 +64,9 @@ const createMainWindow = () => {
 
     // Once dom is ready
     mainWindow.webContents.on("dom-ready", () => {
-        // 
+        screenMap.addScreen(1366, 768, { x: 1366, y: 0 }, "test");
+
+        Mouse.start();
     });
 
     mainWindow.on("closed", () => {
@@ -87,7 +86,7 @@ const createOverlayWindow = () => {
             nodeIntegration: true,
         },
         skipTaskbar: true,
-        opacity: 0.6,
+        transparent: true,
         fullscreen: true,
     });
 
@@ -249,6 +248,12 @@ const client = new Client((e) => {
                 case "keyboard.keyup":
                     addon.keyboard.keyUp(methodParams.keyCode);
                     break;
+                case "mouse.down":
+                    addon.mouse.down(methodParams.mouseBtn);
+                    break;
+                case "mouse.up":
+                    addon.mouse.up(methodParams.mouseBtn);
+                    break;
                 default:
                     break;
             }
@@ -275,10 +280,11 @@ interface MainWindowMethodArguments {
     screenPos?: CoordinateObject;
 }
 
-type OverlayWindowEventTypes = "keydown" | "keyup";
+type OverlayWindowEventTypes = "keydown" | "keyup" | "mousedown" | "mouseup";
 
 interface OverlayWindowEventArguments {
     keyCode?: number;
+    mouseBtn?: number;
 }
 
 class IpcMethods {
@@ -366,10 +372,20 @@ function overlayWindowEventHandler(
 ): void {
     switch (e) {
         case "keydown":
-            server.sendMethodToClient(currentScreenId, "keyboard.keydown", args)
+            server.sendMethodToClient(
+                currentScreenId,
+                "keyboard.keydown",
+                args
+            );
             break;
         case "keyup":
             server.sendMethodToClient(currentScreenId, "keyboard.keyup", args);
+            break;
+        case "mousedown":
+            server.sendMethodToClient(currentScreenId, "mouse.down", args);
+            break;
+        case "mouseup":
+            server.sendMethodToClient(currentScreenId, "mouse.up", args);
             break;
         default:
             break;
@@ -469,7 +485,7 @@ class Mouse {
                 overlayWindow.blur();
                 overlayWindow.hide();
 
-                winswitcher.activateStoredWindow();
+                addon.window.activateStoredWindow();
             } else {
                 Mouse.moveOnId(
                     translatedCoordinate.id,
@@ -531,7 +547,9 @@ class Mouse {
 
                     isOutside = true;
 
-                    winswitcher.storeActiveWindow();
+                    addon.window.storeCurrentWindow();
+
+                    // addon.mouse.click("right");
 
                     overlayWindow.show();
                     overlayWindow.focus();
@@ -574,7 +592,7 @@ class Mouse {
         this.move(restingPlace[0], restingPlace[1]);
     }
     static move(mouseX: number, mouseY: number): void {
-        moveMouse(mouseX, mouseY);
+        addon.mouse.move(mouseX, mouseY);
     }
     static start(delay = 2): void {
         if (_.isUndefined(Mouse.loop)) {

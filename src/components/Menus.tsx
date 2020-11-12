@@ -44,7 +44,7 @@ const MainMenu = (): JSX.Element => {
 
                                 if (host) {
                                     sendMethod("start server", {
-                                        host: host
+                                        host: host,
                                     }).then(console.log);
                                 } else {
                                     console.log("Please enter value");
@@ -64,7 +64,8 @@ const MainMenu = (): JSX.Element => {
 
                                 if (host) {
                                     sendMethod("connect to server", {
-                                        host: host.toString()
+                                        host: host.toString(),
+                                        port: 4011,
                                     }).then(console.log);
                                 } else {
                                     console.log("Please enter value");
